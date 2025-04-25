@@ -7,103 +7,12 @@ using System.Linq;
 /// <summary>
 /// Provides functionality for merging similar frontmatter properties.
 /// </summary>
-internal static partial class PropertyMerger
+internal static class PropertyMerger
 {
 	/// <summary>
 	/// Cache for property merge mappings
 	/// </summary>
 	private static readonly ConcurrentDictionary<string, string> PropertyMergeCache = new();
-
-	/// <summary>
-	/// Dictionary of known property mappings for merging
-	/// </summary>
-	private static readonly Dictionary<string, string> KnownPropertyMappings = new(StringComparer.OrdinalIgnoreCase)
-	{
-		// Title variants
-		{ "title", "title" },
-		{ "name", "title" },
-		{ "heading", "title" },
-		{ "subject", "title" },
-		{ "post-title", "title" },
-		{ "pagetitle", "title" },
-		{ "page-title", "title" },
-		{ "headline", "title" },
-
-		// Author variants
-		{ "author", "author" },
-		{ "authors", "author" },
-		{ "creator", "author" },
-		{ "contributor", "author" },
-		{ "contributors", "author" },
-		{ "by", "author" },
-		{ "written-by", "author" },
-		{ "writer", "author" },
-
-		// Date variants
-		{ "date", "date" },
-		{ "created", "date" },
-		{ "creation_date", "date" },
-		{ "creation-date", "date" },
-		{ "creationdate", "date" },
-		{ "published", "date" },
-		{ "publish_date", "date" },
-		{ "publish-date", "date" },
-		{ "publishdate", "date" },
-		{ "post-date", "date" },
-		{ "posting-date", "date" },
-		{ "pubdate", "date" },
-
-		// Tags variants
-		{ "tags", "tags" },
-		{ "tag", "tags" },
-		{ "keywords", "tags" },
-		{ "keyword", "tags" },
-		{ "topics", "tags" },
-		{ "topic", "tags" },
-
-		// Categories variants
-		{ "categories", "categories" },
-		{ "category", "categories" },
-		{ "section", "categories" },
-		{ "sections", "categories" },
-		{ "group", "categories" },
-		{ "groups", "categories" },
-
-		// Description variants
-		{ "description", "description" },
-		{ "summary", "description" },
-		{ "abstract", "description" },
-		{ "excerpt", "description" },
-		{ "desc", "description" },
-		{ "overview", "description" },
-		{ "snippet", "description" },
-
-		// Last modified variants
-		{ "modified", "modified" },
-		{ "last_modified", "modified" },
-		{ "last-modified", "modified" },
-		{ "lastmodified", "modified" },
-		{ "updated", "modified" },
-		{ "update_date", "modified" },
-		{ "update-date", "modified" },
-		{ "updatedate", "modified" },
-		{ "revision-date", "modified" },
-		{ "last-update", "modified" },
-
-		// Layout variants
-		{ "layout", "layout" },
-		{ "template", "layout" },
-		{ "page-layout", "layout" },
-		{ "type", "layout" },
-		{ "page-type", "layout" },
-
-		// URL/permalink variants
-		{ "permalink", "permalink" },
-		{ "url", "permalink" },
-		{ "link", "permalink" },
-		{ "slug", "permalink" },
-		{ "path", "permalink" }
-	};
 
 	/// <summary>
 	/// Merges properties that capture redundant information based on the specified strategy.
@@ -121,7 +30,7 @@ internal static partial class PropertyMerger
 
 		// Keep track of which properties map to canonical names
 		var propertyMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-		var frontmatterKeys = frontmatter.Keys.ToArray();
+		string[] frontmatterKeys = [.. frontmatter.Keys];
 
 		// Initialize with known mappings
 		foreach (string key in frontmatterKeys)
@@ -138,7 +47,7 @@ internal static partial class PropertyMerger
 			// For Conservative strategy, only use the predefined mappings
 			if (strategy == FrontmatterMergeStrategy.Conservative)
 			{
-				canonicalName = KnownPropertyMappings.TryGetValue(key, out var knownName) ? knownName : key;
+				canonicalName = PropertyMappings.All.TryGetValue(key, out string? knownName) ? knownName : key;
 			}
 			else
 			{
@@ -147,13 +56,15 @@ internal static partial class PropertyMerger
 				{
 					FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, frontmatterKeys),
 					FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, frontmatterKeys),
+					FrontmatterMergeStrategy.None => throw new NotImplementedException(),
+					FrontmatterMergeStrategy.Conservative => throw new NotImplementedException(),
 					_ => key
 				};
 
 				// For Aggressive strategy, validate against known mappings
 				if (strategy == FrontmatterMergeStrategy.Aggressive && canonicalName != key)
 				{
-					bool isKnownMapping = KnownPropertyMappings.ContainsKey(key);
+					bool isKnownMapping = PropertyMappings.All.ContainsKey(key);
 					bool hasExactMatch = frontmatterKeys.Any(k => k != key &&
 						string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
 
@@ -197,6 +108,7 @@ internal static partial class PropertyMerger
 				{
 					mergedFrontmatter[key] = frontmatter[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
 				}
+
 				continue;
 			}
 
@@ -208,12 +120,13 @@ internal static partial class PropertyMerger
 				{
 					if (frontmatter[key] is IList<object> list)
 					{
-						foreach (var item in list)
+						foreach (object item in list)
 						{
 							mergedList.Add(item);
 						}
 					}
 				}
+
 				mergedFrontmatter[canonicalKey] = mergedList.ToArray();
 			}
 			else
@@ -235,7 +148,7 @@ internal static partial class PropertyMerger
 	private static string FindBasicCanonicalName(string key, string[] existingKeys)
 	{
 		// First check if it's a known property
-		if (KnownPropertyMappings.TryGetValue(key, out string? canonicalName))
+		if (PropertyMappings.All.TryGetValue(key, out string? canonicalName))
 		{
 			return canonicalName;
 		}
@@ -275,7 +188,7 @@ internal static partial class PropertyMerger
 	/// <returns>The canonical name for the key.</returns>
 	private static string FindSemanticCanonicalName(string key, string[] existingKeys)
 	{
-		// First try basic matching
+		// First try basic matching (which includes checking PropertyMappings.All)
 		string basicMatch = FindBasicCanonicalName(key, existingKeys);
 		if (basicMatch != key)
 		{
@@ -283,20 +196,23 @@ internal static partial class PropertyMerger
 		}
 
 		// Then try more aggressive matching using word similarity
-		string[] keyWords = NormalizePropertyName(key).Split('_', ' ', '-');
-		var matches = new Dictionary<string, int>();
+		string[] keyWords = NormalizePropertyName(key).Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries);
 
-		foreach (string existingKey in existingKeys)
-		{
-			string[] existingWords = NormalizePropertyName(existingKey).Split('_', ' ', '-');
-			int matchScore = CalculateWordMatchScore(keyWords, existingWords);
-			if (matchScore > 0)
+		// Find best match among existing keys
+		var bestMatch = existingKeys
+			.Select(existingKey => new
 			{
-				matches[existingKey] = matchScore;
-			}
-		}
+				Key = existingKey,
+				Score = CalculateWordMatchScore(
+					keyWords,
+					NormalizePropertyName(existingKey).Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries)
+				)
+			})
+			.Where(match => match.Score > 0)
+			.OrderByDescending(match => match.Score)
+			.FirstOrDefault();
 
-		return matches.Count > 0 ? matches.OrderByDescending(m => m.Value).First().Key : key;
+		return bestMatch?.Key ?? key;
 	}
 
 	private static string NormalizePropertyName(string key)
@@ -329,7 +245,7 @@ internal static partial class PropertyMerger
 		}
 
 		// Replace special characters with underscores and remove duplicates
-		return string.Join("_", key.Split(new[] { '-', ' ', '_' }, StringSplitOptions.RemoveEmptyEntries));
+		return string.Join("_", key.Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries));
 	}
 
 	private static int CalculateWordMatchScore(string[] words1, string[] words2)

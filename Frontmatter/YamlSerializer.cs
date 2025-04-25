@@ -69,8 +69,5 @@ public static class YamlSerializer
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML.</returns>
-	public static string SerializeYamlObject(Dictionary<string, object> input)
-	{
-		return Serializer.Serialize(input);
-	}
+	public static string SerializeYamlObject(Dictionary<string, object> input) => Serializer.Serialize(input);
 }

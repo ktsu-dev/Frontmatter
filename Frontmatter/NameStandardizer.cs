@@ -82,54 +82,7 @@ internal static class NameStandardizer
 
 	private static string? FindKnownPropertyMapping(string key)
 	{
-		// Common property name mappings
-		var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-		{
-			// Title variants
-			{ "name", "title" },
-			{ "heading", "title" },
-			{ "subject", "title" },
-			{ "headline", "title" },
-			{ "post_title", "title" },
-			{ "page_title", "title" },
-
-			// Author variants
-			{ "writer", "author" },
-			{ "creator", "author" },
-			{ "contributor", "author" },
-			{ "by", "author" },
-			{ "written_by", "author" },
-
-			// Date variants
-			{ "created", "date" },
-			{ "published", "date" },
-			{ "creation_date", "date" },
-			{ "publish_date", "date" },
-			{ "post_date", "date" },
-
-			// Description variants
-			{ "summary", "description" },
-			{ "abstract", "description" },
-			{ "excerpt", "description" },
-			{ "desc", "description" },
-			{ "overview", "description" },
-
-			// Tags variants
-			{ "keywords", "tags" },
-			{ "topics", "tags" },
-			{ "tag", "tags" },
-
-			// Categories variants
-			{ "category", "categories" },
-			{ "sections", "categories" },
-			{ "section", "categories" },
-
-			// Layout variants
-			{ "template", "layout" },
-			{ "type", "layout" },
-			{ "page_type", "layout" }
-		};
-
+		var mappings = PropertyMappings.All;
 		return mappings.TryGetValue(key, out string? value) ? value : null;
 	}
 
