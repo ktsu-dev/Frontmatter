@@ -469,4 +469,302 @@ public class PropertyMergerTests
 		Assert.IsTrue(result.ContainsKey("xyz123"));
 		Assert.IsTrue(result.ContainsKey("random_field"));
 	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithNoneMergeStrategy_PreservesAllProperties()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Test Title{Environment.NewLine}" +
+					   $"name: Another Title{Environment.NewLine}" + // Would normally be merged with "title"
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.None);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(2, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("name"));
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+		Assert.AreEqual("Another Title", extractedFrontmatter["name"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithConservativeMergeStrategy_MergesKnownProperties()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Test Title{Environment.NewLine}" +
+					   $"name: Another Title{Environment.NewLine}" + // Should be merged with "title" in conservative strategy
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithAggressiveMergeStrategy_MergesSimilarProperties()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Test Title{Environment.NewLine}" +
+					   $"custom_title: Another Title{Environment.NewLine}" + // Should be merged with "title" in aggressive strategy
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Aggressive);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+
+		// The aggressive strategy should merge these properties
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMaximumMergeStrategy_MergesSemanticallySimilarProperties()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Test Title{Environment.NewLine}" +
+					   $"heading_text: Another Title{Environment.NewLine}" + // Should be merged semantically with "title"
+					   $"article_name: A Third Title{Environment.NewLine}" + // Should be merged semantically with "title"
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Maximum);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+
+		// The maximum strategy should merge all three properties
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMergeStrategy_PreservesFirstValue()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"name: First Title{Environment.NewLine}" + // Should be standardized to "title"
+					   $"title: Second Title{Environment.NewLine}" + // Already standard
+					   $"headline: Third Title{Environment.NewLine}" + // Should be standardized to "title"
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+
+		// Should keep the value from the first occurrence (name: First Title)
+		Assert.AreEqual("First Title", extractedFrontmatter["title"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMergeStrategy_HandlesArrayProperties()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"tags:{Environment.NewLine}" +
+					   $"  - tag1{Environment.NewLine}" +
+					   $"  - tag2{Environment.NewLine}" +
+					   $"keywords:{Environment.NewLine}" + // Should be merged with "tags"
+					   $"  - keyword1{Environment.NewLine}" +
+					   $"  - keyword2{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"));
+
+		// The first array should be preserved
+		var tags = extractedFrontmatter["tags"] as System.Collections.IList;
+		Assert.IsNotNull(tags);
+		Assert.AreEqual(2, tags.Count);
+		Assert.AreEqual("tag1", tags[0]);
+		Assert.AreEqual("tag2", tags[1]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMergeStrategyAndMultipleSections_MergesAcrossSections()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Test Title{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"Content between sections{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"name: Another Title{Environment.NewLine}" + // Should be merged with "title"
+					   $"---{Environment.NewLine}" +
+					   $"More content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+
+		// Assert
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+
+		// Verify content is correctly combined
+		string body = Frontmatter.ExtractBody(result);
+		Assert.IsTrue(body.Contains("Content between sections"));
+		Assert.IsTrue(body.Contains("More content"));
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithDifferentTypes_PreventsMerging()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Test Title{Environment.NewLine}" + // String value
+					   $"name:{Environment.NewLine}" + // Object value that maps to "title" in conservative strategy
+					   $"  text: Another Title{Environment.NewLine}" +
+					   $"  value: 42{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+
+		// The properties should not be merged because they have different types
+		Assert.AreEqual(2, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("name"));
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithDateProperties_MergesAppropriately()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"date: 2023-01-01{Environment.NewLine}" +
+					   $"created: 2023-02-01{Environment.NewLine}" + // Should be merged with "date"
+					   $"published: 2023-03-01{Environment.NewLine}" + // Should be merged with "date"
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("date"));
+
+		// Should keep the value from the first occurrence (date: 2023-01-01)
+		string dateValue = extractedFrontmatter["date"].ToString()!;
+		Assert.IsTrue(dateValue.Contains("2023-01-01"), "Expected date value to contain 2023-01-01");
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithDescriptionVariants_MergesAppropriately()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"description: Primary description{Environment.NewLine}" +
+					   $"summary: A summary text{Environment.NewLine}" + // Should be merged with "description"
+					   $"abstract: An abstract text{Environment.NewLine}" + // Should be merged with "description"
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("description"));
+		Assert.AreEqual("Primary description", extractedFrontmatter["description"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMaximumStrategy_MergesAllRelevantProperties()
+	{
+		// Arrange - a complex case with various property types and names
+		string input = $"---{Environment.NewLine}" +
+					   $"title: Main Article{Environment.NewLine}" +
+					   $"headline: This is news{Environment.NewLine}" +
+					   $"author: John Doe{Environment.NewLine}" +
+					   $"written_by: Jane Smith{Environment.NewLine}" +
+					   $"date: 2023-01-15{Environment.NewLine}" +
+					   $"published_date: 2023-01-20{Environment.NewLine}" +
+					   $"summary: A brief description{Environment.NewLine}" +
+					   $"desc: More details about the content{Environment.NewLine}" +
+					   $"tags:{Environment.NewLine}" +
+					   $"  - news{Environment.NewLine}" +
+					   $"  - article{Environment.NewLine}" +
+					   $"keywords:{Environment.NewLine}" +
+					   $"  - important{Environment.NewLine}" +
+					   $"  - featured{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Maximum);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+
+		// Should merge related properties aggressively
+		Assert.IsTrue(extractedFrontmatter.Count <= 5, $"Expected 5 or fewer properties after merging, but got {extractedFrontmatter.Count}");
+
+		// Title variants should be merged
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.AreEqual("Main Article", extractedFrontmatter["title"]);
+
+		// Author variants should be merged
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("author"));
+		Assert.AreEqual("John Doe", extractedFrontmatter["author"]);
+
+		// Date variants should be merged
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("date"));
+
+		// Description variants should be merged
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("description") || extractedFrontmatter.ContainsKey("summary"));
+
+		// Tags variants should be merged
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"));
+	}
 }
