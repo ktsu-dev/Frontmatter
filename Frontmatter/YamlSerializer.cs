@@ -21,42 +21,30 @@ public static class YamlSerializer
 	/// <summary>
 	/// Custom node deserializer that keeps the last value when encountering duplicates
 	/// </summary>
-	private class LastValueNodeDeserializer(INodeDeserializer nodeDeserializer) : INodeDeserializer
+	private sealed class LastValueNodeDeserializer(INodeDeserializer nodeDeserializer) : INodeDeserializer
 	{
-		private readonly INodeDeserializer _nodeDeserializer = nodeDeserializer;
-
 		public bool Deserialize(IParser parser, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer, out object? value, ObjectDeserializer rootDeserializer)
 		{
-			if (parser.Current is MappingStart)
+			if (parser.Accept<MappingStart>(out _))
 			{
-				var mapping = new Dictionary<string, object>();
-				parser.MoveNext();
+				var dictionary = new Dictionary<string, object?>();
+				parser.Consume<MappingStart>();
 
-				while (parser.Current is not MappingEnd)
+				while (!parser.Accept<MappingEnd>(out _))
 				{
-					if (parser.Current is not Scalar keyScalar)
+					string key = parser.Consume<Scalar>().Value;
+					if (nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out object? val, rootDeserializer))
 					{
-						throw new YamlException("Invalid YAML: Expected scalar key");
+						dictionary[key] = val;
 					}
-
-					string key = keyScalar.Value;
-					parser.MoveNext();
-
-					if (_nodeDeserializer.Deserialize(parser, typeof(object), nestedObjectDeserializer, out object? valueObj, rootDeserializer))
-					{
-						// Always update with the latest value
-						mapping[key] = valueObj!;
-					}
-
-					parser.MoveNext();
 				}
 
-				parser.MoveNext();
-				value = mapping;
+				parser.Consume<MappingEnd>();
+				value = dictionary;
 				return true;
 			}
 
-			return _nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out value, rootDeserializer);
+			return nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out value, rootDeserializer);
 		}
 	}
 
@@ -65,6 +53,8 @@ public static class YamlSerializer
 	/// </summary>
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
 		.WithNodeDeserializer(inner => new LastValueNodeDeserializer(inner), s => s.InsteadOf<DictionaryNodeDeserializer>())
+		.IgnoreUnmatchedProperties()
+		.WithAttemptingUnquotedStringTypeDeserialization()
 		.Build();
 
 	/// <summary>
@@ -72,6 +62,8 @@ public static class YamlSerializer
 	/// </summary>
 	private static readonly ISerializer Serializer = new SerializerBuilder()
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
+		.WithQuotingNecessaryStrings()
+		.WithTypeConverter(new DateTimeConverter())
 		.Build();
 
 	/// <summary>
@@ -125,4 +117,26 @@ public static class YamlSerializer
 	/// <returns>A string containing the serialized YAML.</returns>
 	public static string SerializeYamlObject(Dictionary<string, object> input) =>
 		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
+
+	/// <summary>
+	/// Custom type converter for DateTime values
+	/// </summary>
+	private class DateTimeConverter : IYamlTypeConverter
+	{
+		public bool Accepts(Type type) => type == typeof(DateTime);
+
+		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer deserializer)
+		{
+			var scalar = parser.Consume<Scalar>();
+			return DateTime.TryParse(scalar.Value, out var result) ? result : null;
+		}
+
+		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+		{
+			if (value is DateTime dateTime)
+			{
+				emitter.Emit(new Scalar(null, null, dateTime.ToString("O"), ScalarStyle.Any, true, false));
+			}
+		}
+	}
 }
