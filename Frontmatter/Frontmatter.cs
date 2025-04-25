@@ -115,11 +115,16 @@ public static class Frontmatter
 	/// Extracts frontmatter from a markdown document.
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
-	/// <returns>A dictionary containing the frontmatter properties, or an empty dictionary if no frontmatter is found.</returns>
-	public static Dictionary<string, object> ExtractFrontmatter(string input)
+	/// <returns>A dictionary containing the frontmatter properties, or null if no frontmatter is found.</returns>
+	public static Dictionary<string, object>? ExtractFrontmatter(string input)
 	{
+		if (!HasFrontmatter(input))
+		{
+			return null;
+		}
+
 		var frontmatterObjects = ExtractFrontmatterObjects(input, out _);
-		return frontmatterObjects.Count > 0 ? frontmatterObjects.First() : [];
+		return frontmatterObjects.Count > 0 ? frontmatterObjects.First() : null;
 	}
 
 	/// <summary>
@@ -281,25 +286,25 @@ public static class Frontmatter
 			}
 
 			string frontmatter = splitSections[0].Trim();
-			string remainingContent = splitSections[1].Trim();
+			workingContent = splitSections.Length > 1 ? splitSections[1].Trim() : string.Empty;
 
 			// Special case: If the frontmatter is empty, add an empty dictionary but continue processing
 			if (string.IsNullOrWhiteSpace(frontmatter))
 			{
 				frontmatterSections.Add([]);
-				workingContent = remainingContent;
 				continue;
 			}
 
 			if (YamlSerializer.TryParseYamlObject(frontmatter, out var result))
 			{
 				frontmatterSections.Add(result);
-				workingContent = remainingContent;
 			}
 			else
 			{
-				// Invalid YAML, so stop processing
-				break;
+				// Invalid YAML, so return empty collection and keep original content
+				frontmatterSections.Clear();
+				body = input;
+				return frontmatterSections;
 			}
 		}
 

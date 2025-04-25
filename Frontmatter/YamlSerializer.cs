@@ -4,7 +4,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NodeDeserializers;
 
 /// <summary>
 /// Provides utilities for parsing and serializing YAML content.
@@ -17,10 +19,52 @@ public static class YamlSerializer
 	private static readonly ConcurrentDictionary<uint, Dictionary<string, object>> ParsedYamlCache = new();
 
 	/// <summary>
+	/// Custom node deserializer that keeps the last value when encountering duplicates
+	/// </summary>
+	private class LastValueNodeDeserializer(INodeDeserializer nodeDeserializer) : INodeDeserializer
+	{
+		private readonly INodeDeserializer _nodeDeserializer = nodeDeserializer;
+
+		public bool Deserialize(IParser parser, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer, out object? value, ObjectDeserializer rootDeserializer)
+		{
+			if (parser.Current is MappingStart)
+			{
+				var mapping = new Dictionary<string, object>();
+				parser.MoveNext();
+
+				while (parser.Current is not MappingEnd)
+				{
+					if (parser.Current is not Scalar keyScalar)
+					{
+						throw new YamlException("Invalid YAML: Expected scalar key");
+					}
+
+					string key = keyScalar.Value;
+					parser.MoveNext();
+
+					if (_nodeDeserializer.Deserialize(parser, typeof(object), nestedObjectDeserializer, out object? valueObj, rootDeserializer))
+					{
+						// Always update with the latest value
+						mapping[key] = valueObj!;
+					}
+
+					parser.MoveNext();
+				}
+
+				parser.MoveNext();
+				value = mapping;
+				return true;
+			}
+
+			return _nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out value, rootDeserializer);
+		}
+	}
+
+	/// <summary>
 	/// Reusable deserializer instance
 	/// </summary>
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
-		.WithDuplicateKeyChecking()
+		.WithNodeDeserializer(inner => new LastValueNodeDeserializer(inner), s => s.InsteadOf<DictionaryNodeDeserializer>())
 		.Build();
 
 	/// <summary>
@@ -38,6 +82,13 @@ public static class YamlSerializer
 	/// <returns>true if the YAML was successfully parsed; otherwise, false.</returns>
 	public static bool TryParseYamlObject(string input, [NotNullWhen(true)] out Dictionary<string, object>? result)
 	{
+		result = null;
+
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return false;
+		}
+
 		// Compute a hash of the content for the cache key
 		uint cacheKey = HashUtil.ComputeHash(input);
 
@@ -47,8 +98,6 @@ public static class YamlSerializer
 			return true;
 		}
 
-		result = null;
-
 		try
 		{
 			result = Deserializer.Deserialize<Dictionary<string, object>>(input);
@@ -57,11 +106,16 @@ public static class YamlSerializer
 			if (result != null)
 			{
 				ParsedYamlCache.TryAdd(cacheKey, result);
+				return true;
 			}
 		}
-		catch (YamlException) { }
+		catch (YamlException)
+		{
+			// Return false for any YAML parsing errors
+			result = null;
+		}
 
-		return result is not null;
+		return false;
 	}
 
 	/// <summary>
@@ -69,5 +123,6 @@ public static class YamlSerializer
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML.</returns>
-	public static string SerializeYamlObject(Dictionary<string, object> input) => Serializer.Serialize(input);
+	public static string SerializeYamlObject(Dictionary<string, object> input) =>
+		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
 }

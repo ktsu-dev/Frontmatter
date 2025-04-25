@@ -56,21 +56,39 @@ internal static class PropertyMerger
 				{
 					FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, frontmatterKeys),
 					FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, frontmatterKeys),
-					FrontmatterMergeStrategy.None => throw new NotImplementedException(),
-					FrontmatterMergeStrategy.Conservative => throw new NotImplementedException(),
-					_ => key
+					FrontmatterMergeStrategy.Conservative => key,
+					FrontmatterMergeStrategy.None => key,
+					_ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Invalid merge strategy")
 				};
 
 				// For Aggressive strategy, validate against known mappings
-				if (strategy == FrontmatterMergeStrategy.Aggressive && canonicalName != key)
+				if (strategy == FrontmatterMergeStrategy.Aggressive)
 				{
 					bool isKnownMapping = PropertyMappings.All.ContainsKey(key);
 					bool hasExactMatch = frontmatterKeys.Any(k => k != key &&
 						string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
+					bool isInSameCategory = false;
 
-					if (!isKnownMapping && !hasExactMatch)
+					// Check if the key and canonical name belong to the same category
+					foreach (var categoryMappings in new[] { PropertyMappings.Title, PropertyMappings.Author,
+						PropertyMappings.Date, PropertyMappings.Tags, PropertyMappings.Categories,
+						PropertyMappings.Description, PropertyMappings.Modified, PropertyMappings.Layout,
+						PropertyMappings.Permalink })
+					{
+						if (categoryMappings.ContainsKey(key) || categoryMappings.ContainsKey(canonicalName))
+						{
+							isInSameCategory = true;
+							break;
+						}
+					}
+
+					if (!isKnownMapping && !hasExactMatch && !isInSameCategory)
 					{
 						canonicalName = key;
+					}
+					else if (PropertyMappings.All.TryGetValue(canonicalName, out string? knownName))
+					{
+						canonicalName = knownName;
 					}
 				}
 			}
@@ -159,21 +177,33 @@ internal static class PropertyMerger
 		// Look for exact matches after normalization
 		foreach (string existingKey in existingKeys)
 		{
+			if (existingKey == key)
+			{
+				continue;
+			}
+
 			string normalizedExisting = NormalizePropertyName(existingKey);
 			if (string.Equals(normalizedKey, normalizedExisting, StringComparison.OrdinalIgnoreCase))
 			{
-				return existingKey;
+				// If the existing key is a known property, use its canonical name
+				return PropertyMappings.All.TryGetValue(existingKey, out string? knownName) ? knownName : existingKey;
 			}
 		}
 
 		// Look for partial matches
 		foreach (string existingKey in existingKeys)
 		{
+			if (existingKey == key)
+			{
+				continue;
+			}
+
 			string normalizedExisting = NormalizePropertyName(existingKey);
 			if (normalizedKey.Contains(normalizedExisting, StringComparison.OrdinalIgnoreCase) ||
 				normalizedExisting.Contains(normalizedKey, StringComparison.OrdinalIgnoreCase))
 			{
-				return existingKey;
+				// If the existing key is a known property, use its canonical name
+				return PropertyMappings.All.TryGetValue(existingKey, out string? knownName) ? knownName : existingKey;
 			}
 		}
 
