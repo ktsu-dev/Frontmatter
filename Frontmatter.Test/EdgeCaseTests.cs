@@ -1,7 +1,9 @@
 namespace ktsu.Frontmatter.Test;
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
+using System.Threading.Tasks;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -273,5 +275,178 @@ public class EdgeCaseTests
 		Assert.IsTrue(extractedFrontmatter["content"].ToString()!.Contains("Line1"));
 		Assert.IsTrue(extractedFrontmatter["content"].ToString()!.Contains("Line2"));
 		Assert.IsTrue(extractedFrontmatter["content"].ToString()!.Contains("Line3"));
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithUnicodeCharacters_HandlesCorrectly()
+	{
+		// Arrange
+		string input = $"---{Environment.NewLine}" +
+					   $"标题: 测试标题{Environment.NewLine}" +
+					   $"作者: 张三{Environment.NewLine}" +
+					   $"описание: тестовое описание{Environment.NewLine}" +
+					   $"tags: [测试, тест, 테스트]{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"Content with Unicode: 内容 содержание 콘텐츠";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(4, extractedFrontmatter.Count);
+		Assert.AreEqual("测试标题", extractedFrontmatter["标题"]);
+		Assert.AreEqual("张三", extractedFrontmatter["作者"]);
+		Assert.AreEqual("тестовое описание", extractedFrontmatter["описание"]);
+
+		var tags = extractedFrontmatter["tags"] as System.Collections.IList;
+		Assert.IsNotNull(tags);
+		Assert.AreEqual(3, tags.Count);
+		CollectionAssert.Contains(tags.Cast<object>().ToArray(), "测试");
+		CollectionAssert.Contains(tags.Cast<object>().ToArray(), "тест");
+		CollectionAssert.Contains(tags.Cast<object>().ToArray(), "테스트");
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMixedLineEndings_HandlesCorrectly()
+	{
+		// Arrange
+		string input = "---\r\n" +
+					   "title: Test Title\n" +
+					   "description: Test Description\r" +
+					   "tags:\r\n" +
+					   "  - tag1\n" +
+					   "  - tag2\r" +
+					   "---\r\n" +
+					   "Content with\nmixed\r\nline\rendings";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(3, extractedFrontmatter.Count);
+		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
+		Assert.AreEqual("Test Description", extractedFrontmatter["description"]);
+
+		var tags = extractedFrontmatter["tags"] as System.Collections.IList;
+		Assert.IsNotNull(tags);
+		Assert.AreEqual(2, tags.Count);
+		CollectionAssert.Contains(tags.Cast<object>().ToArray(), "tag1");
+		CollectionAssert.Contains(tags.Cast<object>().ToArray(), "tag2");
+
+		// Verify content is preserved with original line endings
+		string body = Frontmatter.ExtractBody(result);
+		Assert.AreEqual("Content with\nmixed\r\nline\rendings", body);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithVeryLongPropertyNames_HandlesCorrectly()
+	{
+		// Arrange
+		string longPropertyName = new('a', 1000);
+		string longPropertyValue = new('b', 1000);
+
+		string input = $"---{Environment.NewLine}" +
+					   $"{longPropertyName}: {longPropertyValue}{Environment.NewLine}" +
+					   $"---{Environment.NewLine}" +
+					   $"Content";
+
+		// Act
+		string result = Frontmatter.CombineFrontmatter(input);
+		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		// Assert
+		Assert.IsNotNull(extractedFrontmatter);
+		Assert.AreEqual(1, extractedFrontmatter.Count);
+		Assert.IsTrue(extractedFrontmatter.ContainsKey(longPropertyName));
+		Assert.AreEqual(longPropertyValue, extractedFrontmatter[longPropertyName]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithConcurrentAccess_HandlesCorrectly()
+	{
+		// Arrange
+		string[] inputs = new string[100];
+		for (int i = 0; i < inputs.Length; i++)
+		{
+			inputs[i] = $"---{Environment.NewLine}" +
+						$"title{i}: Test Title {i}{Environment.NewLine}" +
+						$"description{i}: Test Description {i}{Environment.NewLine}" +
+						$"---{Environment.NewLine}" +
+						$"Content {i}";
+		}
+
+		// Act
+		ConcurrentBag<InvalidOperationException> exceptions = [];
+		ConcurrentDictionary<int, Dictionary<string, object>> results = new();
+
+		Parallel.For(0, inputs.Length, i =>
+		{
+			try
+			{
+				string result = Frontmatter.CombineFrontmatter(inputs[i]);
+				var frontmatter = Frontmatter.ExtractFrontmatter(result);
+				if (frontmatter != null)
+				{
+					results[i] = frontmatter;
+				}
+			}
+			catch (InvalidOperationException ex)
+			{
+				exceptions.Add(ex);
+			}
+		});
+
+		// Assert
+		Assert.AreEqual(0, exceptions.Count, "No exceptions should occur during parallel processing");
+		Assert.AreEqual(inputs.Length, results.Count, "All inputs should be processed");
+
+		// Verify each result
+		foreach (var kvp in results)
+		{
+			var frontmatter = kvp.Value;
+			Assert.IsNotNull(frontmatter);
+			Assert.IsTrue(frontmatter.ContainsKey($"title{kvp.Key}"), $"Missing title{kvp.Key}");
+			Assert.IsTrue(frontmatter.ContainsKey($"description{kvp.Key}"), $"Missing description{kvp.Key}");
+			Assert.AreEqual($"Test Title {kvp.Key}", frontmatter[$"title{kvp.Key}"]);
+			Assert.AreEqual($"Test Description {kvp.Key}", frontmatter[$"description{kvp.Key}"]);
+		}
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_WithMemoryPressure_HandlesGracefully()
+	{
+		// Arrange
+		string largeValue = new('x', 1024 * 1024); // 1MB string
+		List<string> inputs = [];
+
+		for (int i = 0; i < 10; i++) // Will create ~10MB of data
+		{
+			inputs.Add($"---{Environment.NewLine}" +
+					  $"large_value_{i}: {largeValue}{Environment.NewLine}" +
+					  $"---{Environment.NewLine}" +
+					  $"Content {i}");
+		}
+
+		// Act & Assert
+		var stopwatch = Stopwatch.StartNew();
+
+		foreach (string input in inputs)
+		{
+			string result = Frontmatter.CombineFrontmatter(input);
+			Assert.IsNotNull(result);
+			var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+			Assert.IsNotNull(extractedFrontmatter);
+			Assert.AreEqual(1, extractedFrontmatter.Count);
+		}
+
+		stopwatch.Stop();
+
+		// Performance assertion - processing should complete within reasonable time
+		Assert.IsTrue(stopwatch.ElapsedMilliseconds < 5000,
+			$"Processing large data took too long: {stopwatch.ElapsedMilliseconds}ms");
 	}
 }

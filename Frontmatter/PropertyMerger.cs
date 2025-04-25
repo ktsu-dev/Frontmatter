@@ -1,6 +1,5 @@
 namespace ktsu.Frontmatter;
 
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -177,13 +176,16 @@ internal static partial class PropertyMerger
 			string originalKey = mapping.Key;
 			string canonicalKey = mapping.Value;
 
-			if (!canonicalGroups.TryGetValue(canonicalKey, out var group))
+			if (canonicalGroups.TryGetValue(canonicalKey, out var group))
+			{
+				group.Add(originalKey);
+			}
+			else
 			{
 				group = [];
 				canonicalGroups[canonicalKey] = group;
+				group.Add(originalKey);
 			}
-
-			group.Add(originalKey);
 		}
 
 		foreach (var group in canonicalGroups)
@@ -215,32 +217,25 @@ internal static partial class PropertyMerger
 			}
 
 			// Handle array/list types specially
-			if (firstValue is IList firstList)
+			if (firstValue is IList<object> firstList)
 			{
-				// Merge all lists into one
-				var mergedList = new List<object>();
-
+				// If the first value is a list, merge all lists into one
+				List<object> mergedList = [];
 				foreach (string key in originalKeys)
 				{
-					if (frontmatter[key] is IList list)
+					if (frontmatter[key] is IList<object> list)
 					{
-						foreach (object? item in list)
-						{
-							if (!mergedList.Contains(item))
-							{
-								mergedList.Add(item);
-							}
-						}
+						mergedList.AddRange(list);
 					}
 				}
 
-				mergedFrontmatter[canonicalKey] = mergedList;
-
-				continue;
+				mergedFrontmatter[canonicalKey] = mergedList.Distinct().ToList();
 			}
-
-			// For all other types, use the first value
-			mergedFrontmatter[canonicalKey] = firstValue;
+			else
+			{
+				// For all other types, use the first value
+				mergedFrontmatter[canonicalKey] = firstValue;
+			}
 		}
 
 		return mergedFrontmatter;
@@ -267,7 +262,7 @@ internal static partial class PropertyMerger
 		foreach (string existingKey in existingKeys)
 		{
 			string normalizedExisting = NormalizePropertyName(existingKey);
-			if (normalizedKey == normalizedExisting)
+			if (string.Equals(normalizedKey, normalizedExisting, StringComparison.OrdinalIgnoreCase))
 			{
 				return existingKey;
 			}
@@ -277,7 +272,8 @@ internal static partial class PropertyMerger
 		foreach (string existingKey in existingKeys)
 		{
 			string normalizedExisting = NormalizePropertyName(existingKey);
-			if (normalizedKey.Contains(normalizedExisting) || normalizedExisting.Contains(normalizedKey))
+			if (normalizedKey.Contains(normalizedExisting, StringComparison.OrdinalIgnoreCase) ||
+				normalizedExisting.Contains(normalizedKey, StringComparison.OrdinalIgnoreCase))
 			{
 				return existingKey;
 			}

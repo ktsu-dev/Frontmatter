@@ -115,7 +115,7 @@ public static class Frontmatter
 	/// Extracts frontmatter from a markdown document.
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
-	/// <returns>A dictionary containing the frontmatter properties, or null if no frontmatter is found.</returns>
+	/// <returns>A dictionary containing the frontmatter properties, or an empty dictionary if no frontmatter is found.</returns>
 	public static Dictionary<string, object> ExtractFrontmatter(string input)
 	{
 		var frontmatterObjects = ExtractFrontmatterObjects(input, out _);
@@ -348,7 +348,8 @@ public static class Frontmatter
 
 			if (aValue.GetType() != bValue.GetType())
 			{
-				throw new InvalidOperationException($"Key '{key}' has different types in frontmatter objects. Fix before proceeding.");
+				combinedFrontmatterObject[key] = aValue; // Keep the first value
+				continue;
 			}
 
 			if (aValue is IDictionary<string, object> aDict && bValue is IDictionary<string, object> bDict)
@@ -373,12 +374,7 @@ public static class Frontmatter
 			}
 			else
 			{
-				if (!aValue.Equals(bValue))
-				{
-					throw new InvalidOperationException($"Key '{key}' has different values in frontmatter objects. Fix before proceeding.");
-				}
-
-				combinedFrontmatterObject[key] = aValue;
+				combinedFrontmatterObject[key] = aValue; // Keep the first value
 			}
 		}
 
