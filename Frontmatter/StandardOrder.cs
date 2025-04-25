@@ -206,20 +206,36 @@ public static class StandardOrder
 	/// </returns>
 	public static int Compare(string a, string b)
 	{
+		ArgumentNullException.ThrowIfNull(a);
+		ArgumentNullException.ThrowIfNull(b);
+
 		if (a == b)
 		{
 			return 0;
 		}
 
-		int indexA = Array.IndexOf(PropertyNames, a);
-		int indexB = Array.IndexOf(PropertyNames, b);
+		// Get the indices from the standard property list
+		int indexA = Array.IndexOf(PropertyNames, a.ToLowerInvariant());
+		int indexB = Array.IndexOf(PropertyNames, b.ToLowerInvariant());
 
-		return indexA < 0 && indexB < 0
-			? string.Compare(a, b, StringComparison.Ordinal)
-			: indexA < 0
-			? 1
-			: indexB < 0
-			? -1
-			: indexA - indexB;
+		// If both properties are not in the standard list, sort them alphabetically
+		if (indexA < 0 && indexB < 0)
+		{
+			return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+		}
+
+		// If only one property is in the standard list, it should come first
+		if (indexA < 0)
+		{
+			return 1;
+		}
+
+		if (indexB < 0)
+		{
+			return -1;
+		}
+
+		// Both properties are in the standard list, sort by their index
+		return indexA - indexB;
 	}
 }

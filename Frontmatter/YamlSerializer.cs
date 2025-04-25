@@ -63,12 +63,17 @@ public static class YamlSerializer
 			var rawData = Deserializer.Deserialize<Dictionary<object, object>>(input);
 			result = [];
 
-			// Convert dictionary keys to strings
+			// Convert dictionary keys to strings and preserve the first occurrence of duplicate keys
 			foreach (var pair in rawData)
 			{
 				if (pair.Key != null)
 				{
-					result[pair.Key.ToString()!] = pair.Value;
+					string key = pair.Key.ToString()!;
+					// Only add the key if it doesn't already exist
+					if (!result.ContainsKey(key))
+					{
+						result[key] = pair.Value ?? string.Empty;
+					}
 				}
 			}
 
@@ -82,6 +87,16 @@ public static class YamlSerializer
 		catch (YamlException)
 		{
 			// Return false for any YAML parsing errors
+			result = null;
+		}
+		catch (InvalidOperationException) // More specific exception for deserialization errors
+		{
+			// Return false for deserialization errors
+			result = null;
+		}
+		catch (ArgumentException) // More specific exception for argument errors
+		{
+			// Return false for argument errors
 			result = null;
 		}
 

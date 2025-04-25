@@ -269,6 +269,25 @@ public static class Frontmatter
 		int processCount = 0;
 		const int maxFrontmatterSections = 100; // Reasonable limit to prevent excessive processing
 
+		// Count the frontmatter sections first to validate against the maximum limit
+		string tempContent = workingContent;
+		int delimiterCount = 0;
+		int lastIndex = 0;
+
+		while ((lastIndex = tempContent.IndexOf(FrontmatterDelimiter, lastIndex)) != -1)
+		{
+			delimiterCount++;
+			lastIndex += FrontmatterDelimiter.Length;
+		}
+
+		// Each frontmatter section requires 2 delimiters, so divide by 2
+		int potentialSections = delimiterCount / 2;
+
+		if (potentialSections > maxFrontmatterSections)
+		{
+			throw new InvalidOperationException($"Document contains more than {maxFrontmatterSections} frontmatter sections. This may indicate a parsing error or malformed document.");
+		}
+
 		while (workingContent.StartsWithOrdinal(delimeterAndNewLine))
 		{
 			processCount++;

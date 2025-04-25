@@ -29,72 +29,13 @@ internal static class PropertyMerger
 		}
 
 		// Keep track of which properties map to canonical names
-		var propertyMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var propertyMappings = new Dictionary<string, string>();
 		string[] frontmatterKeys = [.. frontmatter.Keys];
 
 		// Initialize with known mappings
-		foreach (string key in frontmatterKeys)
+		foreach (string? key in frontmatterKeys)
 		{
-			string canonicalName = key;
-
-			// Try to find in cache first
-			if (PropertyMergeCache.TryGetValue(key, out string? cachedName))
-			{
-				propertyMappings[key] = cachedName;
-				continue;
-			}
-
-			// For Conservative strategy, only use the predefined mappings
-			if (strategy == FrontmatterMergeStrategy.Conservative)
-			{
-				canonicalName = PropertyMappings.All.TryGetValue(key, out string? knownName) ? knownName : key;
-			}
-			else
-			{
-				// For Aggressive and Maximum strategies
-				canonicalName = strategy switch
-				{
-					FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, frontmatterKeys),
-					FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, frontmatterKeys),
-					FrontmatterMergeStrategy.Conservative => key,
-					FrontmatterMergeStrategy.None => key,
-					_ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Invalid merge strategy")
-				};
-
-				// For Aggressive strategy, validate against known mappings
-				if (strategy == FrontmatterMergeStrategy.Aggressive)
-				{
-					bool isKnownMapping = PropertyMappings.All.ContainsKey(key);
-					bool hasExactMatch = frontmatterKeys.Any(k => k != key &&
-						string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
-					bool isInSameCategory = false;
-
-					// Check if the key and canonical name belong to the same category
-					foreach (var categoryMappings in new[] { PropertyMappings.Title, PropertyMappings.Author,
-						PropertyMappings.Date, PropertyMappings.Tags, PropertyMappings.Categories,
-						PropertyMappings.Description, PropertyMappings.Modified, PropertyMappings.Layout,
-						PropertyMappings.Permalink })
-					{
-						if (categoryMappings.ContainsKey(key) || categoryMappings.ContainsKey(canonicalName))
-						{
-							isInSameCategory = true;
-							break;
-						}
-					}
-
-					if (!isKnownMapping && !hasExactMatch && !isInSameCategory)
-					{
-						canonicalName = key;
-					}
-					else if (PropertyMappings.All.TryGetValue(canonicalName, out string? knownName))
-					{
-						canonicalName = knownName;
-					}
-				}
-			}
-
-			PropertyMergeCache.TryAdd(key, canonicalName);
-			propertyMappings[key] = canonicalName;
+			propertyMappings[key] = GetCanonicalName(key, strategy, frontmatterKeys);
 		}
 
 		// Create a new dictionary to hold the merged properties
@@ -106,55 +47,131 @@ internal static class PropertyMerger
 			string canonicalKey = group.Key;
 			var originalKeys = group.ToList();
 
-			// Get the first value to determine the type
-			string firstKey = originalKeys[0];
-			object? firstValue = frontmatter[firstKey];
-			if (firstValue == null)
-			{
-				continue;
-			}
-
-			var firstType = firstValue.GetType();
-
-			// Check if all values have the same type
-			bool allSameType = originalKeys.All(k => frontmatter[k]?.GetType() == firstType);
-
-			if (!allSameType)
-			{
-				// If types are different, keep all properties separate
-				foreach (string key in originalKeys)
-				{
-					mergedFrontmatter[key] = frontmatter[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
-				}
-
-				continue;
-			}
-
-			// Handle array/list types specially
-			if (firstValue is IList<object> firstList)
-			{
-				var mergedList = new HashSet<object>();
-				foreach (string key in originalKeys)
-				{
-					if (frontmatter[key] is IList<object> list)
-					{
-						foreach (object item in list)
-						{
-							mergedList.Add(item);
-						}
-					}
-				}
-
-				mergedFrontmatter[canonicalKey] = mergedList.ToArray();
-			}
-			else
-			{
-				// For all other types, use the first value
-				mergedFrontmatter[canonicalKey] = firstValue;
-			}
+			MergePropertyGroup(frontmatter, mergedFrontmatter, canonicalKey, originalKeys);
 		}
 
 		return mergedFrontmatter;
+	}
+
+	private static string GetCanonicalName(string key, FrontmatterMergeStrategy strategy, string[] frontmatterKeys)
+	{
+		// Try to find in cache first
+		if (PropertyMergeCache.TryGetValue(key, out string? cachedName))
+		{
+			return cachedName;
+		}
+
+		string canonicalName = strategy switch
+		{
+			FrontmatterMergeStrategy.Conservative => GetConservativeCanonicalName(key),
+			FrontmatterMergeStrategy.Aggressive => GetAggressiveCanonicalName(key, frontmatterKeys),
+			FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, frontmatterKeys),
+			FrontmatterMergeStrategy.None => key,
+			_ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Invalid merge strategy")
+		};
+
+		PropertyMergeCache.TryAdd(key, canonicalName);
+		return canonicalName;
+	}
+
+	private static string GetConservativeCanonicalName(string key) =>
+		PropertyMappings.All.TryGetValue(key, out string? knownName) ? knownName : key;
+
+	private static string GetAggressiveCanonicalName(string key, string[] frontmatterKeys)
+	{
+		string canonicalName = FindBasicCanonicalName(key, frontmatterKeys);
+
+		bool isKnownMapping = PropertyMappings.All.ContainsKey(key);
+		bool hasExactMatch = frontmatterKeys.Any(k => k != key &&
+			string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
+		bool isInSameCategory = IsInSameCategory(key, canonicalName);
+
+		return !isKnownMapping && !hasExactMatch && !isInSameCategory
+			? key
+			: PropertyMappings.All.TryGetValue(canonicalName, out string? knownName) ? knownName : canonicalName;
+	}
+
+	private static bool IsInSameCategory(string key, string canonicalName)
+	{
+		var categoryMappings = new[]
+		{
+			PropertyMappings.Title,
+			PropertyMappings.Author,
+			PropertyMappings.Date,
+			PropertyMappings.Tags,
+			PropertyMappings.Categories,
+			PropertyMappings.Description,
+			PropertyMappings.Modified,
+			PropertyMappings.Layout,
+			PropertyMappings.Permalink
+		};
+
+		return categoryMappings.Any(mapping => mapping.ContainsKey(key) || mapping.ContainsKey(canonicalName));
+	}
+
+	private static void MergePropertyGroup(
+		Dictionary<string, object> source,
+		Dictionary<string, object> target,
+		string canonicalKey,
+		List<string> originalKeys)
+	{
+		// Get the first value to determine the type
+		string firstKey = originalKeys[0];
+		object firstValue = source[firstKey];
+		if (firstValue == null)
+		{
+			return;
+		}
+
+		var firstType = firstValue.GetType();
+
+		// Check if all values have the same type
+		bool allSameType = originalKeys.All(k => source[k]?.GetType() == firstType);
+
+		if (!allSameType)
+		{
+			// If types are different, keep all properties separate
+			foreach (string key in originalKeys)
+			{
+				target[key] = source[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
+			}
+
+			return;
+		}
+
+		// Handle array/list types specially
+		if (firstValue is IList<object> || firstValue is object[])
+		{
+			MergeArrayValues(source, target, canonicalKey, originalKeys);
+		}
+		else
+		{
+			// For all other types, use the first value
+			target[canonicalKey] = firstValue;
+		}
+	}
+
+	private static void MergeArrayValues(
+		Dictionary<string, object> source,
+		Dictionary<string, object> target,
+		string canonicalKey,
+		List<string> originalKeys)
+	{
+		HashSet<object> mergedList = [];
+		foreach (string key in originalKeys)
+		{
+			object? value = source[key];
+			if (value is IList<object> list)
+			{
+				mergedList.UnionWith(list);
+			}
+			else if (value is object[] array)
+			{
+				mergedList.UnionWith(array);
+			}
+		}
+
+		target[canonicalKey] = mergedList.ToArray();
 	}
 
 	/// <summary>
