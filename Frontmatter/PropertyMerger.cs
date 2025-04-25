@@ -121,94 +121,65 @@ internal static partial class PropertyMerger
 
 		// Keep track of which properties map to canonical names
 		var propertyMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var frontmatterKeys = frontmatter.Keys.ToArray();
 
 		// Initialize with known mappings
-		foreach (string key in frontmatter.Keys)
+		foreach (string key in frontmatterKeys)
 		{
+			string canonicalName = key;
+
 			// Try to find in cache first
-			if (PropertyMergeCache.TryGetValue(key, out string? canonicalName))
+			if (PropertyMergeCache.TryGetValue(key, out string? cachedName))
 			{
-				propertyMappings[key] = canonicalName;
+				propertyMappings[key] = cachedName;
 				continue;
 			}
 
 			// For Conservative strategy, only use the predefined mappings
 			if (strategy == FrontmatterMergeStrategy.Conservative)
 			{
-				// Check known mappings dictionary
-				if (KnownPropertyMappings.TryGetValue(key, out canonicalName))
-				{
-					PropertyMergeCache[key] = canonicalName;
-					propertyMappings[key] = canonicalName;
-				}
-				else
-				{
-					// No mapping found, use the key itself
-					PropertyMergeCache[key] = key;
-					propertyMappings[key] = key;
-				}
-
-				continue;
+				canonicalName = KnownPropertyMappings.TryGetValue(key, out var knownName) ? knownName : key;
 			}
-
-			// For Aggressive and Maximum strategies, try to find similar keys
-			canonicalName = strategy switch
+			else
 			{
-				FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, [.. frontmatter.Keys]),
-				FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, [.. frontmatter.Keys]),
-				FrontmatterMergeStrategy.Conservative => key, // Should never reach here
-				FrontmatterMergeStrategy.None => key, // Should never reach here
-				_ => key // Fallback for any other case
-			};
-
-			// For Aggressive strategy, only merge if we found a known mapping or exact match
-			if (strategy == FrontmatterMergeStrategy.Aggressive)
-			{
-				bool isKnownMapping = KnownPropertyMappings.ContainsKey(key);
-				bool hasExactMatch = frontmatter.Keys.Any(k => k != key &&
-					string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
-
-				if (!isKnownMapping && !hasExactMatch)
+				// For Aggressive and Maximum strategies
+				canonicalName = strategy switch
 				{
-					canonicalName = key;
+					FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, frontmatterKeys),
+					FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, frontmatterKeys),
+					_ => key
+				};
+
+				// For Aggressive strategy, validate against known mappings
+				if (strategy == FrontmatterMergeStrategy.Aggressive && canonicalName != key)
+				{
+					bool isKnownMapping = KnownPropertyMappings.ContainsKey(key);
+					bool hasExactMatch = frontmatterKeys.Any(k => k != key &&
+						string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
+
+					if (!isKnownMapping && !hasExactMatch)
+					{
+						canonicalName = key;
+					}
 				}
 			}
 
-			PropertyMergeCache[key] = canonicalName;
+			PropertyMergeCache.TryAdd(key, canonicalName);
 			propertyMappings[key] = canonicalName;
 		}
 
 		// Create a new dictionary to hold the merged properties
 		var mergedFrontmatter = new Dictionary<string, object>();
 
-		// Group properties by their canonical names
-		var canonicalGroups = new Dictionary<string, List<string>>();
-
-		foreach (var mapping in propertyMappings)
-		{
-			string originalKey = mapping.Key;
-			string canonicalKey = mapping.Value;
-
-			if (canonicalGroups.TryGetValue(canonicalKey, out var group))
-			{
-				group.Add(originalKey);
-			}
-			else
-			{
-				group = [];
-				canonicalGroups[canonicalKey] = group;
-				group.Add(originalKey);
-			}
-		}
-
-		foreach (var group in canonicalGroups)
+		// Group properties by their canonical names and merge values
+		foreach (var group in propertyMappings.GroupBy(x => x.Value, x => x.Key))
 		{
 			string canonicalKey = group.Key;
-			var originalKeys = group.Value;
+			var originalKeys = group.ToList();
 
 			// Get the first value to determine the type
 			string firstKey = originalKeys[0];
-			object firstValue = frontmatter[firstKey];
+			object? firstValue = frontmatter[firstKey];
 			if (firstValue == null)
 			{
 				continue;
@@ -226,24 +197,24 @@ internal static partial class PropertyMerger
 				{
 					mergedFrontmatter[key] = frontmatter[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
 				}
-
 				continue;
 			}
 
 			// Handle array/list types specially
 			if (firstValue is IList<object> firstList)
 			{
-				// If the first value is a list, merge all lists into one
-				List<object> mergedList = [];
+				var mergedList = new HashSet<object>();
 				foreach (string key in originalKeys)
 				{
 					if (frontmatter[key] is IList<object> list)
 					{
-						mergedList.AddRange(list);
+						foreach (var item in list)
+						{
+							mergedList.Add(item);
+						}
 					}
 				}
-
-				mergedFrontmatter[canonicalKey] = mergedList.Distinct().ToArray();
+				mergedFrontmatter[canonicalKey] = mergedList.ToArray();
 			}
 			else
 			{
@@ -330,41 +301,35 @@ internal static partial class PropertyMerger
 
 	private static string NormalizePropertyName(string key)
 	{
-		// Convert to lowercase
-		key = key.ToLowerInvariant();
+		// Convert to lowercase and trim
+		key = key.Trim().ToLowerInvariant();
 
-		// Remove common prefixes
+		// Common prefixes and suffixes to remove
 		string[] prefixes = ["page_", "post_", "meta_", "custom_", "user_", "site_"];
-		foreach (string? prefix in prefixes)
+		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
+
+		// Remove prefixes
+		foreach (string prefix in prefixes)
 		{
-			if (key.StartsWith(prefix))
+			if (key.StartsWith(prefix, StringComparison.Ordinal))
 			{
 				key = key[prefix.Length..];
 				break;
 			}
 		}
 
-		// Remove common suffixes
-		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
-		foreach (string? suffix in suffixes)
+		// Remove suffixes
+		foreach (string suffix in suffixes)
 		{
-			if (key.EndsWith(suffix))
+			if (key.EndsWith(suffix, StringComparison.Ordinal))
 			{
 				key = key[..^suffix.Length];
 				break;
 			}
 		}
 
-		// Replace special characters with underscores
-		key = key.Replace('-', '_').Replace(' ', '_');
-
-		// Remove duplicate underscores
-		while (key.Contains("__"))
-		{
-			key = key.Replace("__", "_");
-		}
-
-		return key.Trim('_');
+		// Replace special characters with underscores and remove duplicates
+		return string.Join("_", key.Split(new[] { '-', ' ', '_' }, StringSplitOptions.RemoveEmptyEntries));
 	}
 
 	private static int CalculateWordMatchScore(string[] words1, string[] words2)

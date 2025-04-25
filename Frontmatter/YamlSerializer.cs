@@ -17,9 +17,18 @@ public static class YamlSerializer
 	private static readonly ConcurrentDictionary<uint, Dictionary<string, object>> ParsedYamlCache = new();
 
 	/// <summary>
-	/// Cache for serialized YAML to avoid repeated serialization
+	/// Reusable deserializer instance
 	/// </summary>
-	private static readonly ConcurrentDictionary<uint, string> SerializedYamlCache = new();
+	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
+		.WithDuplicateKeyChecking()
+		.Build();
+
+	/// <summary>
+	/// Reusable serializer instance
+	/// </summary>
+	private static readonly ISerializer Serializer = new SerializerBuilder()
+		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
+		.Build();
 
 	/// <summary>
 	/// Attempts to parse a YAML string into a dictionary object.
@@ -40,13 +49,9 @@ public static class YamlSerializer
 
 		result = null;
 
-		var deserializer = new DeserializerBuilder()
-			.WithDuplicateKeyChecking()
-			.Build();
-
 		try
 		{
-			result = deserializer.Deserialize<Dictionary<string, object>>(input);
+			result = Deserializer.Deserialize<Dictionary<string, object>>(input);
 
 			// Cache the successfully parsed result
 			if (result != null)
@@ -66,24 +71,6 @@ public static class YamlSerializer
 	/// <returns>A string containing the serialized YAML.</returns>
 	public static string SerializeYamlObject(Dictionary<string, object> input)
 	{
-		// Generate YAML content first to compute hash
-		var serializer = new SerializerBuilder()
-			.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
-			.Build();
-
-		string serialized = serializer.Serialize(input);
-
-		// Compute hash for caching
-		uint cacheKey = HashUtil.ComputeHash(serialized);
-
-		// Try to get from cache first
-		if (SerializedYamlCache.TryGetValue(cacheKey, out string? cachedResult))
-		{
-			return cachedResult;
-		}
-
-		// Cache the result
-		SerializedYamlCache.TryAdd(cacheKey, serialized);
-		return serialized;
+		return Serializer.Serialize(input);
 	}
 }
