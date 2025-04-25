@@ -161,6 +161,19 @@ internal static partial class PropertyMerger
 				_ => key // Fallback for any other case
 			};
 
+			// For Aggressive strategy, only merge if we found a known mapping or exact match
+			if (strategy == FrontmatterMergeStrategy.Aggressive)
+			{
+				bool isKnownMapping = KnownPropertyMappings.ContainsKey(key);
+				bool hasExactMatch = frontmatter.Keys.Any(k => k != key &&
+					string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
+
+				if (!isKnownMapping && !hasExactMatch)
+				{
+					canonicalName = key;
+				}
+			}
+
 			PropertyMergeCache[key] = canonicalName;
 			propertyMappings[key] = canonicalName;
 		}
@@ -194,7 +207,8 @@ internal static partial class PropertyMerger
 			var originalKeys = group.Value;
 
 			// Get the first value to determine the type
-			object firstValue = frontmatter[originalKeys[0]];
+			string firstKey = originalKeys[0];
+			object firstValue = frontmatter[firstKey];
 			if (firstValue == null)
 			{
 				continue;
@@ -229,7 +243,7 @@ internal static partial class PropertyMerger
 					}
 				}
 
-				mergedFrontmatter[canonicalKey] = mergedList.Distinct().ToList();
+				mergedFrontmatter[canonicalKey] = mergedList.Distinct().ToArray();
 			}
 			else
 			{

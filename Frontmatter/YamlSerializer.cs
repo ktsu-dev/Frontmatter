@@ -40,7 +40,9 @@ public static class YamlSerializer
 
 		result = null;
 
-		Deserializer deserializer = new();
+		var deserializer = new DeserializerBuilder()
+			.WithDuplicateKeyChecking()
+			.Build();
 
 		try
 		{
