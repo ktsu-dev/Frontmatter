@@ -287,6 +287,7 @@ public class FrontmatterTests
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("Original Title", extractedFrontmatter["title"]);
 	}
+	private static readonly string[] valueArr2 = ["tag1", "tag2"];
 
 	[TestMethod]
 	public void AddFrontmatter_WithComplexValues_SerializesCorrectly()
@@ -295,7 +296,7 @@ public class FrontmatterTests
 		string input = "Content without frontmatter";
 		var frontmatter = new Dictionary<string, object> {
 			{ "title", "Complex Title" },
-			{ "tags", new[] { "tag1", "tag2" } },
+			{ "tags", valueArr2 },
 			{ "nested", new Dictionary<string, object> {
 				{ "key1", "value1" },
 				{ "key2", 42 }
@@ -461,6 +462,7 @@ public class FrontmatterTests
 		Assert.IsTrue(result.Contains("author: Test Author"));
 		Assert.IsTrue(result.Contains("date: "));
 	}
+	private static readonly string[] valueArr3 = ["tag1", "tag2", "tag3"];
 
 	[TestMethod]
 	public void SerializeFrontmatter_WithComplexNestedTypes_SerializesCorrectly()
@@ -469,7 +471,7 @@ public class FrontmatterTests
 		var frontmatter = new Dictionary<string, object>
 		{
 			{ "title", "Test Title" },
-			{ "tags", new[] { "tag1", "tag2", "tag3" } },
+			{ "tags", valueArr3 },
 			{ "metadata", new Dictionary<string, object>
 				{
 					{ "created", new DateTime(2023, 1, 1) },

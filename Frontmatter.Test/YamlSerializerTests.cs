@@ -314,6 +314,7 @@ public class YamlSerializerTests
 		Assert.AreEqual(originalTags[0], parsedTags[0]);
 		Assert.AreEqual(originalTags[1], parsedTags[1]);
 	}
+	private static readonly string[] value = ["item1", "item2"];
 
 	[TestMethod]
 	public void RoundTrip_WithComplexTypes_PreservesStructure()
@@ -326,7 +327,7 @@ public class YamlSerializerTests
 				{ "key1", "value1" },
 				{ "key2", 42 },
 				{ "key3", true },
-				{ "nestedArray", new[] { "item1", "item2" } }
+				{ "nestedArray", value }
 			}}
 		};
 
