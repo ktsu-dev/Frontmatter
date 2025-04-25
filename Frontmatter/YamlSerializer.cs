@@ -4,9 +4,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NodeDeserializers;
+using YamlDotNet.Serialization.NamingConventions;
 
 /// <summary>
 /// Provides utilities for parsing and serializing YAML content.
@@ -19,51 +18,19 @@ public static class YamlSerializer
 	private static readonly ConcurrentDictionary<uint, Dictionary<string, object>> ParsedYamlCache = new();
 
 	/// <summary>
-	/// Custom node deserializer that keeps the last value when encountering duplicates
-	/// </summary>
-	private sealed class LastValueNodeDeserializer(INodeDeserializer nodeDeserializer) : INodeDeserializer
-	{
-		public bool Deserialize(IParser parser, Type expectedType, Func<IParser, Type, object?> nestedObjectDeserializer, out object? value, ObjectDeserializer rootDeserializer)
-		{
-			if (parser.Accept<MappingStart>(out _))
-			{
-				var dictionary = new Dictionary<string, object?>();
-				parser.Consume<MappingStart>();
-
-				while (!parser.Accept<MappingEnd>(out _))
-				{
-					string key = parser.Consume<Scalar>().Value;
-					if (nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out object? val, rootDeserializer))
-					{
-						dictionary[key] = val;
-					}
-				}
-
-				parser.Consume<MappingEnd>();
-				value = dictionary;
-				return true;
-			}
-
-			return nodeDeserializer.Deserialize(parser, expectedType, nestedObjectDeserializer, out value, rootDeserializer);
-		}
-	}
-
-	/// <summary>
 	/// Reusable deserializer instance
 	/// </summary>
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
-		.WithNodeDeserializer(inner => new LastValueNodeDeserializer(inner), s => s.InsteadOf<DictionaryNodeDeserializer>())
+		.WithNamingConvention(NullNamingConvention.Instance)
 		.IgnoreUnmatchedProperties()
-		.WithAttemptingUnquotedStringTypeDeserialization()
 		.Build();
 
 	/// <summary>
 	/// Reusable serializer instance
 	/// </summary>
 	private static readonly ISerializer Serializer = new SerializerBuilder()
+		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
-		.WithQuotingNecessaryStrings()
-		.WithTypeConverter(new DateTimeConverter())
 		.Build();
 
 	/// <summary>
@@ -92,10 +59,21 @@ public static class YamlSerializer
 
 		try
 		{
-			result = Deserializer.Deserialize<Dictionary<string, object>>(input);
+			// Simple approach with direct deserializer
+			var rawData = Deserializer.Deserialize<Dictionary<object, object>>(input);
+			result = [];
+
+			// Convert dictionary keys to strings
+			foreach (var pair in rawData)
+			{
+				if (pair.Key != null)
+				{
+					result[pair.Key.ToString()!] = pair.Value;
+				}
+			}
 
 			// Cache the successfully parsed result
-			if (result != null)
+			if (result.Count > 0)
 			{
 				ParsedYamlCache.TryAdd(cacheKey, result);
 				return true;
@@ -117,26 +95,4 @@ public static class YamlSerializer
 	/// <returns>A string containing the serialized YAML.</returns>
 	public static string SerializeYamlObject(Dictionary<string, object> input) =>
 		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
-
-	/// <summary>
-	/// Custom type converter for DateTime values
-	/// </summary>
-	private class DateTimeConverter : IYamlTypeConverter
-	{
-		public bool Accepts(Type type) => type == typeof(DateTime);
-
-		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer deserializer)
-		{
-			var scalar = parser.Consume<Scalar>();
-			return DateTime.TryParse(scalar.Value, out var result) ? result : null;
-		}
-
-		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
-		{
-			if (value is DateTime dateTime)
-			{
-				emitter.Emit(new Scalar(null, null, dateTime.ToString("O"), ScalarStyle.Any, true, false));
-			}
-		}
-	}
 }
