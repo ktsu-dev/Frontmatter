@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 /// <summary>
 /// Provides functionality for merging similar frontmatter properties.
@@ -122,7 +121,7 @@ internal static partial class PropertyMerger
 		}
 
 		// Keep track of which properties map to canonical names
-		Dictionary<string, string> propertyMappings = new(StringComparer.OrdinalIgnoreCase);
+		var propertyMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 		// Initialize with known mappings
 		foreach (string key in frontmatter.Keys)
@@ -156,8 +155,8 @@ internal static partial class PropertyMerger
 			// For Aggressive and Maximum strategies, try to find similar keys
 			canonicalName = strategy switch
 			{
-				FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, frontmatter.Keys),
-				FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, frontmatter.Keys),
+				FrontmatterMergeStrategy.Aggressive => FindBasicCanonicalName(key, [.. frontmatter.Keys]),
+				FrontmatterMergeStrategy.Maximum => FindSemanticCanonicalName(key, [.. frontmatter.Keys]),
 				FrontmatterMergeStrategy.Conservative => key, // Should never reach here
 				FrontmatterMergeStrategy.None => key, // Should never reach here
 				_ => key // Fallback for any other case
@@ -168,10 +167,11 @@ internal static partial class PropertyMerger
 		}
 
 		// Create a new dictionary to hold the merged properties
-		Dictionary<string, object> mergedFrontmatter = [];
+		var mergedFrontmatter = new Dictionary<string, object>();
 
 		// Group properties by their canonical names
-		Dictionary<string, List<string>> canonicalGroups = [];
+		var canonicalGroups = new Dictionary<string, List<string>>();
+
 		foreach (var mapping in propertyMappings)
 		{
 			string originalKey = mapping.Key;
@@ -186,24 +186,61 @@ internal static partial class PropertyMerger
 			group.Add(originalKey);
 		}
 
-		// Merge properties within each canonical group
 		foreach (var group in canonicalGroups)
 		{
 			string canonicalKey = group.Key;
-			var keys = group.Value;
+			var originalKeys = group.Value;
 
-			if (keys.Count == 1)
+			// Get the first value to determine the type
+			object firstValue = frontmatter[originalKeys[0]];
+			if (firstValue == null)
 			{
-				// No merging needed for single items
-				mergedFrontmatter[keys[0]] = frontmatter[keys[0]];
 				continue;
 			}
 
-			// Find the highest priority key (usually the canonical one)
-			string primaryKey = keys.FirstOrDefault(k => string.Equals(k, canonicalKey, StringComparison.OrdinalIgnoreCase)) ?? keys.First();
-			object mergedValue = MergePropertyValues(keys.Select(k => new KeyValuePair<string, object>(k, frontmatter[k])));
+			var firstType = firstValue.GetType();
 
-			mergedFrontmatter[primaryKey] = mergedValue;
+			// Check if all values have the same type
+			bool allSameType = originalKeys.All(k => frontmatter[k]?.GetType() == firstType);
+
+			if (!allSameType)
+			{
+				// If types are different, keep all properties separate
+				foreach (string key in originalKeys)
+				{
+					mergedFrontmatter[key] = frontmatter[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
+				}
+
+				continue;
+			}
+
+			// Handle array/list types specially
+			if (firstValue is IList firstList)
+			{
+				// Merge all lists into one
+				var mergedList = new List<object>();
+
+				foreach (string key in originalKeys)
+				{
+					if (frontmatter[key] is IList list)
+					{
+						foreach (object? item in list)
+						{
+							if (!mergedList.Contains(item))
+							{
+								mergedList.Add(item);
+							}
+						}
+					}
+				}
+
+				mergedFrontmatter[canonicalKey] = mergedList;
+
+				continue;
+			}
+
+			// For all other types, use the first value
+			mergedFrontmatter[canonicalKey] = firstValue;
 		}
 
 		return mergedFrontmatter;
@@ -215,39 +252,37 @@ internal static partial class PropertyMerger
 	/// <param name="key">The key to analyze.</param>
 	/// <param name="existingKeys">All existing keys in the frontmatter.</param>
 	/// <returns>The canonical name for the key.</returns>
-	private static string FindBasicCanonicalName(string key, IEnumerable<string> existingKeys)
+	private static string FindBasicCanonicalName(string key, string[] existingKeys)
 	{
-		// Check for plural/singular forms
-		string singularForm = key.TrimEnd('s');
-		string pluralForm = key + "s";
-
-		string[] existingKeysArray = [.. existingKeys];
-		// If both forms exist, prefer the plural form
-		if (existingKeysArray.Any(k => string.Equals(k, pluralForm, StringComparison.OrdinalIgnoreCase)))
+		// First check if it's a known property
+		if (KnownPropertyMappings.TryGetValue(key, out string? canonicalName))
 		{
-			return pluralForm;
+			return canonicalName;
 		}
 
-		// If singular form (without 's') exists and is not the same as the key, use it
-		if (singularForm != key && existingKeysArray.Any(k => string.Equals(k, singularForm, StringComparison.OrdinalIgnoreCase)))
+		// Remove common prefixes/suffixes and special characters
+		string normalizedKey = NormalizePropertyName(key);
+
+		// Look for exact matches after normalization
+		foreach (string existingKey in existingKeys)
 		{
-			return singularForm;
+			string normalizedExisting = NormalizePropertyName(existingKey);
+			if (normalizedKey == normalizedExisting)
+			{
+				return existingKey;
+			}
 		}
 
-		// Check for common prefixes and suffixes
-		var datePattern = DatePatternRegex();
-		if (datePattern.IsMatch(key))
+		// Look for partial matches
+		foreach (string existingKey in existingKeys)
 		{
-			return "date";
+			string normalizedExisting = NormalizePropertyName(existingKey);
+			if (normalizedKey.Contains(normalizedExisting) || normalizedExisting.Contains(normalizedKey))
+			{
+				return existingKey;
+			}
 		}
 
-		var authorPattern = AuthorPatternRegex();
-		if (authorPattern.IsMatch(key))
-		{
-			return "author";
-		}
-
-		// No transformation found, use the original key
 		return key;
 	}
 
@@ -257,177 +292,89 @@ internal static partial class PropertyMerger
 	/// <param name="key">The key to analyze.</param>
 	/// <param name="existingKeys">All existing keys in the frontmatter.</param>
 	/// <returns>The canonical name for the key.</returns>
-	private static string FindSemanticCanonicalName(string key, IEnumerable<string> existingKeys)
+	private static string FindSemanticCanonicalName(string key, string[] existingKeys)
 	{
-		// First try basic pattern matching
-		string basicResult = FindBasicCanonicalName(key, existingKeys);
-		if (basicResult != key)
+		// First try basic matching
+		string basicMatch = FindBasicCanonicalName(key, existingKeys);
+		if (basicMatch != key)
 		{
-			return basicResult;
+			return basicMatch;
 		}
 
-		// Check if the key is in known mappings
-		if (KnownPropertyMappings.TryGetValue(key, out string? canonicalName))
+		// Then try more aggressive matching using word similarity
+		string[] keyWords = NormalizePropertyName(key).Split('_', ' ', '-');
+		var matches = new Dictionary<string, int>();
+
+		foreach (string existingKey in existingKeys)
 		{
-			return canonicalName;
-		}
-
-		// Try basic similarity - we can't use the FuzzyMatcher here since we would need
-		// to take a dependency on the full FuzzySearch library
-		string[] knownPropertyNames = [.. KnownPropertyMappings.Values.Distinct()];
-
-		// Simple distance-based matching
-		string bestMatch = key;
-		int bestScore = int.MinValue;
-
-		foreach (string propertyName in knownPropertyNames)
-		{
-			int score = CalculateSimilarity(key, propertyName);
-			if (score > bestScore)
+			string[] existingWords = NormalizePropertyName(existingKey).Split('_', ' ', '-');
+			int matchScore = CalculateWordMatchScore(keyWords, existingWords);
+			if (matchScore > 0)
 			{
-				bestScore = score;
-				bestMatch = propertyName;
+				matches[existingKey] = matchScore;
 			}
 		}
 
-		// Only use the best match if it's similar enough
-		if (bestScore > 3)
-		{
-			return bestMatch;
-		}
-
-		// No match found with sufficient confidence
-		return key;
+		return matches.Count > 0 ? matches.OrderByDescending(m => m.Value).First().Key : key;
 	}
 
-	/// <summary>
-	/// Calculates a simple similarity score between two strings.
-	/// Higher scores indicate greater similarity.
-	/// </summary>
-	private static int CalculateSimilarity(string a, string b)
+	private static string NormalizePropertyName(string key)
 	{
-		// Convert to lowercase for case-insensitive comparison
-		a = a.ToLowerInvariant();
-		b = b.ToLowerInvariant();
+		// Convert to lowercase
+		key = key.ToLowerInvariant();
 
-		// If one string contains the other, high similarity
-		if (a.Contains(b) || b.Contains(a))
+		// Remove common prefixes
+		string[] prefixes = ["page_", "post_", "meta_", "custom_", "user_", "site_"];
+		foreach (string? prefix in prefixes)
 		{
-			return 10;
-		}
-
-		// Count matching characters at start of string
-		int prefixMatch = 0;
-		int minLength = Math.Min(a.Length, b.Length);
-		for (int i = 0; i < minLength; i++)
-		{
-			if (a[i] == b[i])
+			if (key.StartsWith(prefix))
 			{
-				prefixMatch++;
-			}
-			else
-			{
+				key = key[prefix.Length..];
 				break;
 			}
 		}
 
-		// Count matching characters at end of string
-		int suffixMatch = 0;
-		for (int i = 1; i <= minLength; i++)
+		// Remove common suffixes
+		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
+		foreach (string? suffix in suffixes)
 		{
-			if (a[^i] == b[^i])
+			if (key.EndsWith(suffix))
 			{
-				suffixMatch++;
-			}
-			else
-			{
+				key = key[..^suffix.Length];
 				break;
 			}
 		}
 
-		// Count shared characters
-		int sharedChars = a.Intersect(b).Count();
+		// Replace special characters with underscores
+		key = key.Replace('-', '_').Replace(' ', '_');
 
-		// Calculate overall score
-		return (prefixMatch * 2) + suffixMatch + sharedChars;
+		// Remove duplicate underscores
+		while (key.Contains("__"))
+		{
+			key = key.Replace("__", "_");
+		}
+
+		return key.Trim('_');
 	}
 
-	/// <summary>
-	/// Merges values from multiple properties into a single value.
-	/// </summary>
-	/// <param name="properties">The properties to merge.</param>
-	/// <returns>The merged value.</returns>
-	private static object MergePropertyValues(IEnumerable<KeyValuePair<string, object>> properties)
+	private static int CalculateWordMatchScore(string[] words1, string[] words2)
 	{
-		List<KeyValuePair<string, object>> propertiesList = [.. properties];
-		if (propertiesList.Count == 0)
+		int score = 0;
+		foreach (string word1 in words1)
 		{
-			return string.Empty;
-		}
-
-		if (propertiesList.Count == 1)
-		{
-			return propertiesList[0].Value;
-		}
-
-		// Check if all values are lists/arrays
-		bool allLists = propertiesList.All(p => (p.Value is IEnumerable && p.Value is not string) || (p.Value is string s && s.Contains(',')) || p.Value is Array);
-
-		if (allLists)
-		{
-			// Merge lists
-			HashSet<object> mergedSet = [];
-
-			foreach (var property in propertiesList)
+			foreach (string word2 in words2)
 			{
-				if (property.Value is IEnumerable list and not string)
+				if (word1 == word2)
 				{
-					foreach (object item in list)
-					{
-						mergedSet.Add(item);
-					}
+					score += 2;
 				}
-				else if (property.Value is Array array)
+				else if (word1.Contains(word2) || word2.Contains(word1))
 				{
-					foreach (object item in array)
-					{
-						mergedSet.Add(item);
-					}
+					score += 1;
 				}
-				else if (property.Value is string s && s.Contains(','))
-				{
-					// Split comma-separated string
-					foreach (string item in s.Split(',').Select(x => x.Trim()))
-					{
-						if (!string.IsNullOrWhiteSpace(item))
-						{
-							mergedSet.Add(item);
-						}
-					}
-				}
-				else
-				{
-					mergedSet.Add(property.Value);
-				}
-			}
-
-			return mergedSet.ToArray();
-		}
-
-		// If not all lists, take the most specific (non-null, non-empty) value
-		foreach (var property in propertiesList)
-		{
-			if (property.Value != null &&
-				(property.Value is not string s || !string.IsNullOrWhiteSpace(s)))
-			{
-				return property.Value;
 			}
 		}
 
-		// If all values are null or empty, return the first one
-		return propertiesList[0].Value;
+		return score;
 	}
-
-	[GeneratedRegex("(date|time|when)([-_].*)?", RegexOptions.IgnoreCase)] private static partial Regex DatePatternRegex();
-	[GeneratedRegex("(author|by|creator|contributor)([-_].*)?", RegexOptions.IgnoreCase)] private static partial Regex AuthorPatternRegex();
 }

@@ -1,6 +1,7 @@
 namespace ktsu.Frontmatter;
 
 using System.Collections.Concurrent;
+using System.Linq;
 
 /// <summary>
 /// Provides functionality for standardizing frontmatter property names.
@@ -30,7 +31,7 @@ internal static class NameStandardizer
 			// Skip if it's already a standard property name
 			if (Array.Exists(standardProperties, p => string.Equals(p, property.Key, StringComparison.OrdinalIgnoreCase)))
 			{
-				standardizedFrontmatter[property.Key] = property.Value;
+				standardizedFrontmatter[property.Key.ToLowerInvariant()] = property.Value;
 				continue;
 			}
 
@@ -52,93 +53,145 @@ internal static class NameStandardizer
 				continue;
 			}
 
-			// Find the closest matching standard property name using simple similarity
-			string bestMatch = FindMostSimilarPropertyName(property.Key, standardProperties);
+			// Try to find a match in known property mappings
+			string? knownMapping = FindKnownPropertyMapping(property.Key);
+			if (knownMapping != null)
+			{
+				PropertyNameCache.TryAdd(property.Key, knownMapping);
+				standardizedFrontmatter[knownMapping] = property.Value;
+				continue;
+			}
 
-			PropertyNameCache.TryAdd(property.Key, bestMatch);
-			standardizedFrontmatter[bestMatch] = property.Value;
+			// Try to find a match by removing common prefixes and suffixes
+			string normalizedKey = NormalizePropertyName(property.Key);
+			string? standardMatch = FindStandardPropertyMatch(normalizedKey, standardProperties);
+			if (standardMatch != null)
+			{
+				PropertyNameCache.TryAdd(property.Key, standardMatch);
+				standardizedFrontmatter[standardMatch] = property.Value;
+				continue;
+			}
+
+			// If no match found, preserve the original property name
+			PropertyNameCache.TryAdd(property.Key, property.Key);
+			standardizedFrontmatter[property.Key] = property.Value;
 		}
 
 		return standardizedFrontmatter;
 	}
 
-	/// <summary>
-	/// Finds the most similar property name from a list of standard properties
-	/// </summary>
-	private static string FindMostSimilarPropertyName(string propertyName, string[] standardProperties)
+	private static string? FindKnownPropertyMapping(string key)
 	{
-		string bestMatch = propertyName;
-		int bestScore = int.MinValue;
-
-		foreach (string standardProperty in standardProperties)
+		// Common property name mappings
+		var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
-			int score = CalculateSimilarity(propertyName, standardProperty);
-			if (score > bestScore)
-			{
-				bestScore = score;
-				bestMatch = standardProperty;
-			}
-		}
+			// Title variants
+			{ "name", "title" },
+			{ "heading", "title" },
+			{ "subject", "title" },
+			{ "headline", "title" },
+			{ "post_title", "title" },
+			{ "page_title", "title" },
 
-		// Only use best match if it's similar enough
-		if (bestScore > 3)
-		{
-			return bestMatch;
-		}
+			// Author variants
+			{ "writer", "author" },
+			{ "creator", "author" },
+			{ "contributor", "author" },
+			{ "by", "author" },
+			{ "written_by", "author" },
 
-		// Fall back to original property name
-		return propertyName;
+			// Date variants
+			{ "created", "date" },
+			{ "published", "date" },
+			{ "creation_date", "date" },
+			{ "publish_date", "date" },
+			{ "post_date", "date" },
+
+			// Description variants
+			{ "summary", "description" },
+			{ "abstract", "description" },
+			{ "excerpt", "description" },
+			{ "desc", "description" },
+			{ "overview", "description" },
+
+			// Tags variants
+			{ "keywords", "tags" },
+			{ "topics", "tags" },
+			{ "tag", "tags" },
+
+			// Categories variants
+			{ "category", "categories" },
+			{ "sections", "categories" },
+			{ "section", "categories" },
+
+			// Layout variants
+			{ "template", "layout" },
+			{ "type", "layout" },
+			{ "page_type", "layout" }
+		};
+
+		return mappings.TryGetValue(key, out string? value) ? value : null;
 	}
 
-	/// <summary>
-	/// Calculates a simple similarity score between two strings.
-	/// Higher scores indicate greater similarity.
-	/// </summary>
-	private static int CalculateSimilarity(string a, string b)
+	private static string? FindStandardPropertyMatch(string normalizedKey, string[] standardProperties)
 	{
-		// Convert to lowercase for case-insensitive comparison
-		a = a.ToLowerInvariant();
-		b = b.ToLowerInvariant();
-
-		// If one string contains the other, high similarity
-		if (a.Contains(b) || b.Contains(a))
+		// Try exact match first
+		string? exactMatch = standardProperties.FirstOrDefault(p =>
+			string.Equals(NormalizePropertyName(p), normalizedKey, StringComparison.OrdinalIgnoreCase));
+		if (exactMatch != null)
 		{
-			return 10;
+			return exactMatch;
 		}
 
-		// Count matching characters at start of string
-		int prefixMatch = 0;
-		int minLength = Math.Min(a.Length, b.Length);
-		for (int i = 0; i < minLength; i++)
+		// Try partial matches
+		foreach (string standardProperty in standardProperties)
 		{
-			if (a[i] == b[i])
+			string normalizedStandard = NormalizePropertyName(standardProperty);
+			if (normalizedKey.Contains(normalizedStandard) || normalizedStandard.Contains(normalizedKey))
 			{
-				prefixMatch++;
+				return standardProperty;
 			}
-			else
+		}
+
+		return null;
+	}
+
+	private static string NormalizePropertyName(string key)
+	{
+		// Convert to lowercase
+		key = key.ToLowerInvariant();
+
+		// Remove common prefixes
+		string[] prefixes = ["page_", "post_", "meta_", "custom_", "user_", "site_"];
+		foreach (string prefix in prefixes)
+		{
+			if (key.StartsWith(prefix))
 			{
+				key = key[prefix.Length..];
 				break;
 			}
 		}
 
-		// Count matching characters at end of string
-		int suffixMatch = 0;
-		for (int i = 1; i <= minLength; i++)
+		// Remove common suffixes
+		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
+		foreach (string suffix in suffixes)
 		{
-			if (a[^i] == b[^i])
+			if (key.EndsWith(suffix))
 			{
-				suffixMatch++;
-			}
-			else
-			{
+				key = key[..^suffix.Length];
 				break;
 			}
 		}
 
-		// Count shared characters
-		int sharedChars = a.Intersect(b).Count();
+		// Replace special characters with underscores
+		key = key.Replace('-', '_').Replace(' ', '_');
 
-		// Calculate overall score
-		return (prefixMatch * 2) + suffixMatch + sharedChars;
+		// Remove duplicate underscores
+		while (key.Contains("__"))
+		{
+			key = key.Replace("__", "_");
+		}
+
+		return key.Trim('_');
 	}
 }

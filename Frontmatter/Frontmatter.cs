@@ -116,10 +116,10 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <returns>A dictionary containing the frontmatter properties, or null if no frontmatter is found.</returns>
-	public static Dictionary<string, object>? ExtractFrontmatter(string input)
+	public static Dictionary<string, object> ExtractFrontmatter(string input)
 	{
 		var frontmatterObjects = ExtractFrontmatterObjects(input, out _);
-		return frontmatterObjects.Count > 0 ? frontmatterObjects.First() : null;
+		return frontmatterObjects.Count > 0 ? frontmatterObjects.First() : [];
 	}
 
 	/// <summary>
@@ -198,7 +198,7 @@ public static class Frontmatter
 	public static string ExtractBody(string input)
 	{
 		ExtractFrontmatterObjects(input, out string body);
-		return body;
+		return body.Trim();
 	}
 
 	/// <summary>
@@ -283,9 +283,10 @@ public static class Frontmatter
 			string frontmatter = splitSections[0].Trim();
 			string remainingContent = splitSections[1].Trim();
 
-			// Special case: If the frontmatter is empty, skip it but continue processing
+			// Special case: If the frontmatter is empty, add an empty dictionary but continue processing
 			if (string.IsNullOrWhiteSpace(frontmatter))
 			{
+				frontmatterSections.Add([]);
 				workingContent = remainingContent;
 				continue;
 			}
