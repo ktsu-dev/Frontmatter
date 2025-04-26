@@ -116,7 +116,7 @@ jobs:
 
     - name: Test
       shell: pwsh
-      run: dotnet test --configuration Release --verbosity normal --no-build
+      run: dotnet test -m:1 --configuration Release --verbosity normal --no-build
 
     - name: Detect Dependencies
       if: ${{ env.SHOULD_RELEASE == 'True' }}
