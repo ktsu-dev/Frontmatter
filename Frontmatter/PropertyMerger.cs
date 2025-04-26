@@ -61,6 +61,13 @@ internal static class PropertyMerger
 			return cachedName;
 		}
 
+		// For None strategy or keys with special characters, preserve the original key
+		if (strategy == FrontmatterMergeStrategy.None || key.Any(c => !char.IsLetterOrDigit(c) && c != '_' && c != '-'))
+		{
+			PropertyMergeCache.TryAdd(key, key);
+			return key;
+		}
+
 		string canonicalName = strategy switch
 		{
 			FrontmatterMergeStrategy.Conservative => GetConservativeCanonicalName(key),
@@ -69,6 +76,12 @@ internal static class PropertyMerger
 			FrontmatterMergeStrategy.None => key,
 			_ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Invalid merge strategy")
 		};
+
+		// If no mapping was found, preserve the original key
+		if (string.IsNullOrEmpty(canonicalName) || canonicalName == key)
+		{
+			canonicalName = key;
+		}
 
 		PropertyMergeCache.TryAdd(key, canonicalName);
 		return canonicalName;
@@ -146,8 +159,8 @@ internal static class PropertyMerger
 		}
 		else
 		{
-			// For all other types, use the first value
-			target[canonicalKey] = firstValue;
+			// For all other types, use the first value and keep the original key
+			target[originalKeys[0]] = firstValue;
 		}
 	}
 

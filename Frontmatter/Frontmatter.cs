@@ -1,7 +1,8 @@
 namespace ktsu.Frontmatter;
 
+using System;
 using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 using ktsu.Extensions;
 
@@ -55,8 +56,11 @@ public static class Frontmatter
 	/// <param name="orderMode">The ordering mode for frontmatter properties.</param>
 	/// <param name="mergeStrategy">The strategy for merging similar properties.</param>
 	/// <returns>A string containing the markdown document with combined frontmatter.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string CombineFrontmatter(string input, FrontmatterNaming propertyNamingMode, FrontmatterOrder orderMode, FrontmatterMergeStrategy mergeStrategy)
 	{
+		ArgumentNullException.ThrowIfNull(input);
+
 		// Generate a unique cache key based on the content and options
 		uint optionsHash = (uint)propertyNamingMode | ((uint)orderMode << 8) | ((uint)mergeStrategy << 16);
 		uint cacheKey = HashUtil.CreateCacheKey(input, optionsHash);
@@ -116,8 +120,11 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <returns>A dictionary containing the frontmatter properties, or null if no frontmatter is found.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static Dictionary<string, object>? ExtractFrontmatter(string input)
 	{
+		ArgumentNullException.ThrowIfNull(input);
+
 		if (!HasFrontmatter(input))
 		{
 			return null;
@@ -132,7 +139,12 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <returns>True if the document contains frontmatter, false otherwise.</returns>
-	public static bool HasFrontmatter(string input) => !string.IsNullOrEmpty(input) && input.StartsWithOrdinal(FrontmatterDelimiter + Environment.NewLine);
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
+	public static bool HasFrontmatter(string input)
+	{
+		ArgumentNullException.ThrowIfNull(input);
+		return !string.IsNullOrEmpty(input) && input.StartsWithOrdinal(FrontmatterDelimiter + Environment.NewLine);
+	}
 
 	/// <summary>
 	/// Adds frontmatter to a markdown document that doesn't already have it.
@@ -140,8 +152,11 @@ public static class Frontmatter
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <param name="frontmatter">The frontmatter properties to add.</param>
 	/// <returns>A string containing the markdown document with added frontmatter.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string AddFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
+		ArgumentNullException.ThrowIfNull(input);
+
 		if (frontmatter == null || frontmatter.Count == 0)
 		{
 			return input;
@@ -166,8 +181,11 @@ public static class Frontmatter
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <param name="frontmatter">The new frontmatter properties.</param>
 	/// <returns>A string containing the markdown document with replaced frontmatter.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string ReplaceFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
+		ArgumentNullException.ThrowIfNull(input);
+
 		if (frontmatter == null || frontmatter.Count == 0)
 		{
 			return RemoveFrontmatter(input);
@@ -184,8 +202,11 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <returns>A string containing the markdown document with frontmatter removed.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string RemoveFrontmatter(string input)
 	{
+		ArgumentNullException.ThrowIfNull(input);
+
 		if (!HasFrontmatter(input))
 		{
 			return input;
@@ -200,8 +221,11 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <returns>A string containing only the document body without frontmatter.</returns>
+	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string ExtractBody(string input)
 	{
+		ArgumentNullException.ThrowIfNull(input);
+
 		ExtractFrontmatterObjects(input, out string body);
 		return body.Trim();
 	}
@@ -251,89 +275,34 @@ public static class Frontmatter
 	/// <param name="body">Output parameter that will contain the markdown body without frontmatter.</param>
 	/// <returns>A collection of dictionaries representing each frontmatter section.</returns>
 	/// <exception cref="InvalidOperationException">Thrown when there are too many frontmatter sections in the document.</exception>
-	private static Collection<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body)
+	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body)
 	{
-		Collection<Dictionary<string, object>> frontmatterSections = [];
+		var frontmatterObjects = new List<Dictionary<string, object>>();
+		body = input;
 
-		// Create a working copy of the input to avoid modifying the output parameter during processing
-		string workingContent = input;
-		body = input;  // Default value if no frontmatter is found
-
-		string delimeterAndNewLine = FrontmatterDelimiter + Environment.NewLine;
-
-		if (string.IsNullOrEmpty(workingContent) || !workingContent.StartsWithOrdinal(delimeterAndNewLine))
+		if (!HasFrontmatter(input))
 		{
-			return frontmatterSections;
+			return frontmatterObjects;
 		}
 
-		int processCount = 0;
-		const int maxFrontmatterSections = 100; // Reasonable limit to prevent excessive processing
+		string[] sections = input.Split([FrontmatterDelimiter + Environment.NewLine], StringSplitOptions.None);
+		body = string.Join(FrontmatterDelimiter + Environment.NewLine, sections.Skip(2));
 
-		// Count the frontmatter sections first to validate against the maximum limit
-		string tempContent = workingContent;
-		int delimiterCount = 0;
-		int lastIndex = 0;
-
-		while ((lastIndex = tempContent.IndexOf(FrontmatterDelimiter, lastIndex)) != -1)
+		for (int i = 1; i < sections.Length; i += 2)
 		{
-			delimiterCount++;
-			lastIndex += FrontmatterDelimiter.Length;
-		}
-
-		// Each frontmatter section requires 2 delimiters, so divide by 2
-		int potentialSections = delimiterCount / 2;
-
-		if (potentialSections > maxFrontmatterSections)
-		{
-			throw new InvalidOperationException($"Document contains more than {maxFrontmatterSections} frontmatter sections. This may indicate a parsing error or malformed document.");
-		}
-
-		while (workingContent.StartsWithOrdinal(delimeterAndNewLine))
-		{
-			processCount++;
-
-			if (processCount > maxFrontmatterSections)
+			string section = sections[i].Trim();
+			if (string.IsNullOrWhiteSpace(section))
 			{
-				throw new InvalidOperationException($"Document contains more than {maxFrontmatterSections} frontmatter sections. This may indicate a parsing error or malformed document.");
-			}
-
-			string[] splitSections = workingContent.Split(FrontmatterDelimiter, 3, StringSplitOptions.RemoveEmptyEntries);
-			if (splitSections.Length < 2)
-			{
-				// Not enough sections found, so exit the loop
-				break;
-			}
-
-			string frontmatter = splitSections[0].Trim();
-			workingContent = splitSections.Length > 1 ? splitSections[1].Trim() : string.Empty;
-
-			// Special case: If the frontmatter is empty, add an empty dictionary but continue processing
-			if (string.IsNullOrWhiteSpace(frontmatter))
-			{
-				frontmatterSections.Add([]);
 				continue;
 			}
 
-			if (YamlSerializer.TryParseYamlObject(frontmatter, out var result))
+			if (YamlSerializer.TryParseYamlObject(section, out var frontmatterObject) && frontmatterObject != null)
 			{
-				frontmatterSections.Add(result);
-			}
-			else
-			{
-				// Invalid YAML, so return empty collection and keep original content
-				frontmatterSections.Clear();
-				body = input;
-				return frontmatterSections;
+				frontmatterObjects.Add(frontmatterObject);
 			}
 		}
 
-		// Only set the final body output parameter after all processing is complete
-		if (frontmatterSections.Count > 0)
-		{
-			body = workingContent;
-		}
-
-		return frontmatterSections;
+		return frontmatterObjects;
 	}
 
 	/// <summary>
@@ -347,58 +316,18 @@ public static class Frontmatter
 	{
 		Dictionary<string, object> combinedFrontmatterObject = [];
 
-		HashSet<string> combinedKeys = [.. a.Keys];
-		combinedKeys.AddMany(b.Keys);
-
-		foreach (string key in combinedKeys)
+		// First, add all properties from dictionary a
+		foreach (var kvp in a)
 		{
-			bool isAKey = a.ContainsKey(key);
-			bool isBKey = b.ContainsKey(key);
+			combinedFrontmatterObject[kvp.Key] = kvp.Value;
+		}
 
-			if (isAKey && !isBKey)
+		// Then, add properties from dictionary b that don't exist in a
+		foreach (var kvp in b)
+		{
+			if (!combinedFrontmatterObject.ContainsKey(kvp.Key))
 			{
-				combinedFrontmatterObject[key] = a[key];
-				continue;
-			}
-
-			if (!isAKey && isBKey)
-			{
-				combinedFrontmatterObject[key] = b[key];
-				continue;
-			}
-
-			object aValue = a[key];
-			object bValue = b[key];
-
-			if (aValue.GetType() != bValue.GetType())
-			{
-				combinedFrontmatterObject[key] = aValue; // Keep the first value
-				continue;
-			}
-
-			if (aValue is IDictionary<string, object> aDict && bValue is IDictionary<string, object> bDict)
-			{
-				combinedFrontmatterObject[key] = CombineFrontmatterObjects(aDict, bDict);
-			}
-			else if (aValue is ICollection<object> aList && bValue is ICollection<object> bList)
-			{
-				// Use List instead of HashSet to preserve order
-				List<object> combinedList = [.. aList];
-
-				// Add items from bList that aren't already in combinedList
-				foreach (object item in bList)
-				{
-					if (!combinedList.Contains(item))
-					{
-						combinedList.Add(item);
-					}
-				}
-
-				combinedFrontmatterObject[key] = combinedList;
-			}
-			else
-			{
-				combinedFrontmatterObject[key] = aValue; // Keep the first value
+				combinedFrontmatterObject[kvp.Key] = kvp.Value;
 			}
 		}
 
