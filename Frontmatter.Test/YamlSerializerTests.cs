@@ -342,7 +342,7 @@ public class YamlSerializerTests
 		Assert.AreEqual("Complex Document", parsedDictionary["title"]);
 
 		// Check nested object
-		var nestedObject = parsedDictionary["nestedObject"] as Dictionary<object, object>;
+		var nestedObject = parsedDictionary["nestedObject"] as Dictionary<string, object>;
 		Assert.IsNotNull(nestedObject);
 		Assert.AreEqual(4, nestedObject.Count);
 		Assert.AreEqual("value1", nestedObject["key1"]);
@@ -388,7 +388,7 @@ public class YamlSerializerTests
 		Assert.IsNotNull(nestedResult);
 
 		// Modify nested structure
-		var metadata = nestedResult["metadata"] as Dictionary<object, object>;
+		var metadata = nestedResult["metadata"] as Dictionary<string, object>;
 		Assert.IsNotNull(metadata);
 		var tags = metadata["tags"] as List<object>;
 		Assert.IsNotNull(tags);
@@ -400,7 +400,7 @@ public class YamlSerializerTests
 		Assert.IsNotNull(secondNestedResult);
 
 		// Verify the second copy is clean
-		metadata = secondNestedResult["metadata"] as Dictionary<object, object>;
+		metadata = secondNestedResult["metadata"] as Dictionary<string, object>;
 		Assert.IsNotNull(metadata);
 		tags = metadata["tags"] as List<object>;
 		Assert.IsNotNull(tags);
