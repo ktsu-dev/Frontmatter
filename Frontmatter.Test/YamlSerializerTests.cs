@@ -380,12 +380,7 @@ public class YamlSerializerTests
 		Assert.AreEqual("Test Author", secondResult["author"]);
 
 		// Verify deep cloning of nested structures
-		yamlContent = @"
-title: Test Title
-metadata:
-  tags:
-	- tag1
-	- tag2";
+		yamlContent = "title: Test Title\nmetadata:\n  tags:\n    - tag1\n    - tag2";
 
 		// First parse with nested structure
 		bool nestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var nestedResult);
