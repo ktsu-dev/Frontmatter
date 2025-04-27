@@ -79,7 +79,8 @@ public static class YamlSerializer
 					// Only add the key if it doesn't already exist
 					if (!result.ContainsKey(key))
 					{
-						result[key] = pair.Value ?? string.Empty;
+						// Convert the value to ensure proper type handling
+						result[key] = ConvertValue(pair.Value);
 					}
 				}
 			}
@@ -139,6 +140,23 @@ public static class YamlSerializer
 			IList<object> list => list.Select(DeepCloneValue).ToList(),
 			System.Collections.IList list => list.Cast<object>().Select(DeepCloneValue).ToList(),
 			_ => value // For primitive types and strings, which are immutable
+		};
+	}
+
+	/// <summary>
+	/// Converts a deserialized value to the appropriate type.
+	/// </summary>
+	private static object ConvertValue(object? value)
+	{
+		return value switch
+		{
+			null => string.Empty,
+			Dictionary<object, object> dict => dict.ToDictionary(
+				kvp => kvp.Key?.ToString() ?? string.Empty,
+				kvp => ConvertValue(kvp.Value)),
+			List<object> list => list.Select(ConvertValue).ToList(),
+			System.Collections.IList list => list.Cast<object>().Select(ConvertValue).ToList(),
+			_ => value
 		};
 	}
 }
