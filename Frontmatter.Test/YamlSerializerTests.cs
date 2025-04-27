@@ -366,17 +366,52 @@ public class YamlSerializerTests
 		Assert.IsTrue(firstParseResult, "First parse should succeed");
 		Assert.IsNotNull(firstResult, "First parse result should not be null");
 
-		// Modify the first result to verify we get the same instance back
+		// Modify the first result
 		firstResult["marker"] = "modified";
 
-		// Act - Second parse should retrieve from cache
+		// Act - Second parse should retrieve from cache but return a new copy
 		bool secondParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondResult);
 
 		// Assert
 		Assert.IsTrue(secondParseResult);
 		Assert.IsNotNull(secondResult);
-		Assert.IsTrue(secondResult.ContainsKey("marker"));
-		Assert.AreEqual("modified", secondResult["marker"]);
+		Assert.IsFalse(secondResult.ContainsKey("marker"), "Second result should be a clean copy without modifications");
+		Assert.AreEqual("Test Title", secondResult["title"]);
+		Assert.AreEqual("Test Author", secondResult["author"]);
+
+		// Verify deep cloning of nested structures
+		yamlContent = @"
+title: Test Title
+metadata:
+  tags:
+	- tag1
+	- tag2";
+
+		// First parse with nested structure
+		bool nestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var nestedResult);
+		Assert.IsTrue(nestedParseResult);
+		Assert.IsNotNull(nestedResult);
+
+		// Modify nested structure
+		var metadata = nestedResult["metadata"] as Dictionary<object, object>;
+		Assert.IsNotNull(metadata);
+		var tags = metadata["tags"] as List<object>;
+		Assert.IsNotNull(tags);
+		tags.Add("modified");
+
+		// Get another copy from cache
+		bool secondNestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondNestedResult);
+		Assert.IsTrue(secondNestedParseResult);
+		Assert.IsNotNull(secondNestedResult);
+
+		// Verify the second copy is clean
+		metadata = secondNestedResult["metadata"] as Dictionary<object, object>;
+		Assert.IsNotNull(metadata);
+		tags = metadata["tags"] as List<object>;
+		Assert.IsNotNull(tags);
+		Assert.AreEqual(2, tags.Count, "Second result should have original number of tags");
+		Assert.AreEqual("tag1", tags[0]);
+		Assert.AreEqual("tag2", tags[1]);
 	}
 
 	[TestMethod]

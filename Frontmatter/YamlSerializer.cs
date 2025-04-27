@@ -52,8 +52,15 @@ public static class YamlSerializer
 		uint cacheKey = HashUtil.ComputeHash(input);
 
 		// Try to get from cache first
-		if (ParsedYamlCache.TryGetValue(cacheKey, out result!))
+		if (ParsedYamlCache.TryGetValue(cacheKey, out var cachedResult))
 		{
+			// Create a deep copy of the cached dictionary to prevent mutations from affecting other copies
+			result = [];
+			foreach (var pair in cachedResult)
+			{
+				result[pair.Key] = DeepCloneValue(pair.Value);
+			}
+
 			return true;
 		}
 
@@ -80,7 +87,14 @@ public static class YamlSerializer
 			// Cache the successfully parsed result
 			if (result.Count > 0)
 			{
-				ParsedYamlCache.TryAdd(cacheKey, result);
+				// Create a deep copy for caching to prevent the cached instance from being modified
+				var cacheResult = new Dictionary<string, object>();
+				foreach (var pair in result)
+				{
+					cacheResult[pair.Key] = DeepCloneValue(pair.Value);
+				}
+
+				ParsedYamlCache.TryAdd(cacheKey, cacheResult);
 				return true;
 			}
 		}
@@ -110,4 +124,21 @@ public static class YamlSerializer
 	/// <returns>A string containing the serialized YAML.</returns>
 	public static string SerializeYamlObject(Dictionary<string, object> input) =>
 		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
+
+	/// <summary>
+	/// Creates a deep clone of a value, handling nested dictionaries and collections.
+	/// </summary>
+	private static object DeepCloneValue(object value)
+	{
+		return value switch
+		{
+			Dictionary<string, object> dict => new Dictionary<string, object>(dict.Select(kvp =>
+				new KeyValuePair<string, object>(kvp.Key, DeepCloneValue(kvp.Value)))),
+			Dictionary<object, object> dict => new Dictionary<string, object>(dict.Select(kvp =>
+				new KeyValuePair<string, object>(kvp.Key?.ToString() ?? string.Empty, DeepCloneValue(kvp.Value)))),
+			IList<object> list => list.Select(DeepCloneValue).ToList(),
+			System.Collections.IList list => list.Cast<object>().Select(DeepCloneValue).ToList(),
+			_ => value // For primitive types and strings, which are immutable
+		};
+	}
 }
