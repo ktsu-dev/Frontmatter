@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter;
 
 using System.Collections.Concurrent;
@@ -21,7 +25,7 @@ internal static class NameStandardizer
 	internal static Dictionary<string, object> StandardizePropertyNames(Dictionary<string, object> frontmatter)
 	{
 		// Get the array of standard property names
-		string[] standardProperties = StandardOrder.PropertyNames;
+		var standardProperties = StandardOrder.PropertyNames;
 
 		// Create fuzzy matches for properties that don't match standard names
 		Dictionary<string, object> standardizedFrontmatter = [];
@@ -36,7 +40,7 @@ internal static class NameStandardizer
 			}
 
 			// Check if we've already processed this property name before
-			if (PropertyNameCache.TryGetValue(property.Key, out string? mappedName))
+			if (PropertyNameCache.TryGetValue(property.Key, out var mappedName))
 			{
 				// If the mapped name is the same as the original, it means we previously determined
 				// there's no good match, so keep the original
@@ -54,7 +58,7 @@ internal static class NameStandardizer
 			}
 
 			// Try to find a match in known property mappings
-			string? knownMapping = FindKnownPropertyMapping(property.Key);
+			var knownMapping = FindKnownPropertyMapping(property.Key);
 			if (knownMapping != null)
 			{
 				PropertyNameCache.TryAdd(property.Key, knownMapping);
@@ -63,8 +67,8 @@ internal static class NameStandardizer
 			}
 
 			// Try to find a match by removing common prefixes and suffixes
-			string normalizedKey = NormalizePropertyName(property.Key);
-			string? standardMatch = FindStandardPropertyMatch(normalizedKey, standardProperties);
+			var normalizedKey = NormalizePropertyName(property.Key);
+			var standardMatch = FindStandardPropertyMatch(normalizedKey, standardProperties);
 			if (standardMatch != null)
 			{
 				PropertyNameCache.TryAdd(property.Key, standardMatch);
@@ -83,13 +87,13 @@ internal static class NameStandardizer
 	private static string? FindKnownPropertyMapping(string key)
 	{
 		var mappings = PropertyMappings.All;
-		return mappings.TryGetValue(key, out string? value) ? value : null;
+		return mappings.TryGetValue(key, out var value) ? value : null;
 	}
 
 	private static string? FindStandardPropertyMatch(string normalizedKey, string[] standardProperties)
 	{
 		// Try exact match first
-		string? exactMatch = standardProperties.FirstOrDefault(p =>
+		var exactMatch = standardProperties.FirstOrDefault(p =>
 			string.Equals(NormalizePropertyName(p), normalizedKey, StringComparison.OrdinalIgnoreCase));
 		if (exactMatch != null)
 		{
@@ -97,9 +101,9 @@ internal static class NameStandardizer
 		}
 
 		// Try partial matches
-		foreach (string standardProperty in standardProperties)
+		foreach (var standardProperty in standardProperties)
 		{
-			string normalizedStandard = NormalizePropertyName(standardProperty);
+			var normalizedStandard = NormalizePropertyName(standardProperty);
 			if (normalizedKey.Contains(normalizedStandard) || normalizedStandard.Contains(normalizedKey))
 			{
 				return standardProperty;
@@ -116,7 +120,7 @@ internal static class NameStandardizer
 
 		// Remove common prefixes
 		string[] prefixes = ["page_", "post_", "meta_", "custom_", "user_", "site_"];
-		foreach (string prefix in prefixes)
+		foreach (var prefix in prefixes)
 		{
 			if (key.StartsWith(prefix))
 			{
@@ -127,7 +131,7 @@ internal static class NameStandardizer
 
 		// Remove common suffixes
 		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
-		foreach (string suffix in suffixes)
+		foreach (var suffix in suffixes)
 		{
 			if (key.EndsWith(suffix))
 			{

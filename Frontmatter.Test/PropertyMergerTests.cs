@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 [assembly: DoNotParallelize]
 
 namespace ktsu.Frontmatter.Test;
@@ -109,7 +113,7 @@ public class PropertyMergerTests
 		// Debug output
 		Console.WriteLine($"Result count: {result.Count}");
 		Console.WriteLine("Result keys:");
-		foreach (string key in result.Keys)
+		foreach (var key in result.Keys)
 		{
 			Console.WriteLine($"- {key}");
 		}
@@ -132,7 +136,7 @@ public class PropertyMergerTests
 		Assert.AreEqual("This is a description", result["description"]);
 
 		// Check tags value
-		object tagsValue = result["tags"];
+		var tagsValue = result["tags"];
 		if (tagsValue is object[] tagsArray)
 		{
 			Assert.AreEqual(2, tagsArray.Length);
@@ -145,7 +149,7 @@ public class PropertyMergerTests
 		}
 
 		// Check keywords value
-		object keywordsValue = result["keywords"];
+		var keywordsValue = result["keywords"];
 		if (keywordsValue is object[] keywordsArray)
 		{
 			Assert.AreEqual(2, keywordsArray.Length);
@@ -192,7 +196,7 @@ public class PropertyMergerTests
 		// Debug output
 		Console.WriteLine($"Result count: {result.Count}");
 		Console.WriteLine("Result keys:");
-		foreach (string key in result.Keys)
+		foreach (var key in result.Keys)
 		{
 			Console.WriteLine($"- {key}");
 		}
@@ -202,7 +206,7 @@ public class PropertyMergerTests
 		Assert.IsTrue(result.ContainsKey("tags"));
 
 		// Check tags value
-		object tagsValue = result["tags"];
+		var tagsValue = result["tags"];
 		if (tagsValue is object[] tagsArray)
 		{
 			Assert.AreEqual(3, tagsArray.Length);
@@ -332,7 +336,7 @@ public class PropertyMergerTests
 		// Check that the result contains merged values if they were merged
 		if (result.Count == 1)
 		{
-			string key = result.Keys.First();
+			var key = result.Keys.First();
 			if (result[key] is object[] values)
 			{
 				Assert.IsTrue(values.Length >= 2, "The merged array should contain at least 2 values");
@@ -474,14 +478,14 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithNoneMergeStrategy_PreservesAllProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"name: Another Title{Environment.NewLine}" + // Would normally be merged with "title"
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.None);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.None);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -497,14 +501,14 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithConservativeMergeStrategy_MergesKnownProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"name: Another Title{Environment.NewLine}" + // Should be merged with "title" in conservative strategy
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -518,14 +522,14 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithAggressiveMergeStrategy_MergesSimilarProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"custom_title: Another Title{Environment.NewLine}" + // Should be merged with "title" in aggressive strategy
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Aggressive);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Aggressive);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -541,7 +545,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithMaximumMergeStrategy_MergesSemanticallySimilarProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"heading_text: Another Title{Environment.NewLine}" + // Should be merged semantically with "title"
 					   $"article_name: A Third Title{Environment.NewLine}" + // Should be merged semantically with "title"
@@ -549,7 +553,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Maximum);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Maximum);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -565,7 +569,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithMergeStrategy_PreservesFirstValue()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"name: First Title{Environment.NewLine}" + // Should be standardized to "title"
 					   $"title: Second Title{Environment.NewLine}" + // Already standard
 					   $"headline: Third Title{Environment.NewLine}" + // Should be standardized to "title"
@@ -573,7 +577,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -589,7 +593,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithMergeStrategy_HandlesArrayProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"tags:{Environment.NewLine}" +
 					   $"  - tag1{Environment.NewLine}" +
 					   $"  - tag2{Environment.NewLine}" +
@@ -600,7 +604,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -620,7 +624,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithMergeStrategyAndMultipleSections_MergesAcrossSections()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"---{Environment.NewLine}" +
 					   $"Content between sections{Environment.NewLine}" +
@@ -630,7 +634,7 @@ public class PropertyMergerTests
 					   $"More content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 
 		// Assert
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -640,7 +644,7 @@ public class PropertyMergerTests
 		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
 
 		// Verify content is correctly combined
-		string body = Frontmatter.ExtractBody(result);
+		var body = Frontmatter.ExtractBody(result);
 		Assert.IsTrue(body.Contains("Content between sections"));
 		Assert.IsTrue(body.Contains("More content"));
 	}
@@ -649,7 +653,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithDifferentTypes_PreventsMerging()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" + // String value
 					   $"name:{Environment.NewLine}" + // Object value that maps to "title" in conservative strategy
 					   $"  text: Another Title{Environment.NewLine}" +
@@ -658,7 +662,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -675,7 +679,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithDateProperties_MergesAppropriately()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"date: 2023-01-01{Environment.NewLine}" +
 					   $"created: 2023-02-01{Environment.NewLine}" + // Should be merged with "date"
 					   $"published: 2023-03-01{Environment.NewLine}" + // Should be merged with "date"
@@ -683,7 +687,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -692,7 +696,7 @@ public class PropertyMergerTests
 		Assert.IsTrue(extractedFrontmatter.ContainsKey("date"));
 
 		// Should keep the value from the first occurrence (date: 2023-01-01)
-		string dateValue = extractedFrontmatter["date"].ToString()!;
+		var dateValue = extractedFrontmatter["date"].ToString()!;
 		Assert.IsTrue(dateValue.Contains("2023-01-01"), "Expected date value to contain 2023-01-01");
 	}
 
@@ -700,7 +704,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithDescriptionVariants_MergesAppropriately()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"description: Primary description{Environment.NewLine}" +
 					   $"summary: A summary text{Environment.NewLine}" + // Should be merged with "description"
 					   $"abstract: An abstract text{Environment.NewLine}" + // Should be merged with "description"
@@ -708,7 +712,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -722,7 +726,7 @@ public class PropertyMergerTests
 	public void CombineFrontmatter_WithMaximumStrategy_MergesAllRelevantProperties()
 	{
 		// Arrange - a complex case with various property types and names
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Main Article{Environment.NewLine}" +
 					   $"headline: This is news{Environment.NewLine}" +
 					   $"author: John Doe{Environment.NewLine}" +
@@ -741,7 +745,7 @@ public class PropertyMergerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Maximum);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Maximum);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert

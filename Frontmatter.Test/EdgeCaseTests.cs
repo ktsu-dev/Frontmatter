@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter.Test;
 
 using System.Collections.Concurrent;
@@ -15,7 +19,7 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithMalformedYaml_HandlesGracefully()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"malformed:{Environment.NewLine}" +
 					   $"  - not properly indented{Environment.NewLine}" +
@@ -24,7 +28,7 @@ public class EdgeCaseTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
 		Assert.IsFalse(string.IsNullOrEmpty(result));
@@ -42,7 +46,7 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithNestedLists_HandlesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"nested_lists:{Environment.NewLine}" +
 					   $"  - category: Category1{Environment.NewLine}" +
@@ -57,7 +61,7 @@ public class EdgeCaseTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -89,7 +93,7 @@ public class EdgeCaseTests
 		var inputBuilder = new StringBuilder();
 
 		// Create a string with more than 100 frontmatter sections
-		for (int i = 0; i < 101; i++)
+		for (var i = 0; i < 101; i++)
 		{
 			inputBuilder.AppendLine("---");
 			inputBuilder.AppendLine($"section: {i}");
@@ -97,7 +101,7 @@ public class EdgeCaseTests
 			inputBuilder.AppendLine($"Content section {i}");
 		}
 
-		string input = inputBuilder.ToString();
+		var input = inputBuilder.ToString();
 
 		// Act & Assert
 		Assert.ThrowsException<InvalidOperationException>(() => Frontmatter.CombineFrontmatter(input));
@@ -111,7 +115,7 @@ public class EdgeCaseTests
 		inputBuilder.AppendLine("---");
 
 		// Add a large number of properties (1000)
-		for (int i = 0; i < 1000; i++)
+		for (var i = 0; i < 1000; i++)
 		{
 			inputBuilder.AppendLine($"property{i}: value{i}");
 		}
@@ -119,11 +123,11 @@ public class EdgeCaseTests
 		inputBuilder.AppendLine("---");
 		inputBuilder.AppendLine("Content");
 
-		string input = inputBuilder.ToString();
+		var input = inputBuilder.ToString();
 
 		// Act
 		var stopwatch = Stopwatch.StartNew();
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		stopwatch.Stop();
 
 		// Assert
@@ -147,16 +151,16 @@ public class EdgeCaseTests
 		inputBuilder.AppendLine("---");
 
 		// Add large content (100,000 characters)
-		for (int i = 0; i < 10000; i++)
+		for (var i = 0; i < 10000; i++)
 		{
 			inputBuilder.AppendLine($"Line {i} of content with some additional text to make it longer.");
 		}
 
-		string input = inputBuilder.ToString();
+		var input = inputBuilder.ToString();
 
 		// Act
 		var stopwatch = Stopwatch.StartNew();
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		stopwatch.Stop();
 
 		// Assert
@@ -178,18 +182,18 @@ public class EdgeCaseTests
 		var uniqueInputBuilder = new StringBuilder();
 		uniqueInputBuilder.AppendLine("---");
 		uniqueInputBuilder.AppendLine($"title: Test Title {Guid.NewGuid()}");
-		for (int i = 0; i < 1000; i++)
+		for (var i = 0; i < 1000; i++)
 		{
 			uniqueInputBuilder.AppendLine($"property{i}: value{i}");
 		}
 
 		uniqueInputBuilder.AppendLine("---");
 		uniqueInputBuilder.AppendLine("Content");
-		string uniqueInput = uniqueInputBuilder.ToString();
+		var uniqueInput = uniqueInputBuilder.ToString();
 
 		// Act - First call
 		var firstCallStopwatch = Stopwatch.StartNew();
-		string firstResult = Frontmatter.CombineFrontmatter(uniqueInput);
+		var firstResult = Frontmatter.CombineFrontmatter(uniqueInput);
 		firstCallStopwatch.Stop();
 
 		// Small delay to ensure we get different timestamps
@@ -197,7 +201,7 @@ public class EdgeCaseTests
 
 		// Act - Second call (should use cache)
 		var secondCallStopwatch = Stopwatch.StartNew();
-		string secondResult = Frontmatter.CombineFrontmatter(uniqueInput);
+		var secondResult = Frontmatter.CombineFrontmatter(uniqueInput);
 		secondCallStopwatch.Stop();
 
 		// Assert
@@ -212,7 +216,7 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithStrangePropertyNames_HandlesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"property with spaces: Value with spaces{Environment.NewLine}" +
 					   $"property-with-hyphens: Value-with-hyphens{Environment.NewLine}" +
 					   $"property_with_underscores: Value_with_underscores{Environment.NewLine}" +
@@ -222,7 +226,7 @@ public class EdgeCaseTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -241,14 +245,14 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithDuplicateProperties_KeepsFirstValue()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: First Title{Environment.NewLine}" +
 					   $"title: Second Title{Environment.NewLine}" + // Duplicate property
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -261,12 +265,12 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithNoEndDelimiter_HandlesGracefully()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"Content without end delimiter";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
 		// Should handle invalid frontmatter gracefully
@@ -278,7 +282,7 @@ public class EdgeCaseTests
 	public void ExtractFrontmatter_WithEscapedCharacters_ParsesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: \"Title with \\\"quotes\\\" inside\"{Environment.NewLine}" +
 					   $"description: 'Description with ''single quotes'' inside'{Environment.NewLine}" +
 					   $"content: \"Line1\\nLine2\\nLine3\"{Environment.NewLine}" +
@@ -304,7 +308,7 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithUnicodeCharacters_HandlesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"标题: 测试标题{Environment.NewLine}" +
 					   $"作者: 张三{Environment.NewLine}" +
 					   $"описание: тестовое описание{Environment.NewLine}" +
@@ -313,7 +317,7 @@ public class EdgeCaseTests
 					   $"Content with Unicode: 内容 содержание 콘텐츠";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -335,7 +339,7 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithMixedLineEndings_HandlesCorrectly()
 	{
 		// Arrange
-		string input = "---\r\n" +
+		var input = "---\r\n" +
 					   "title: Test Title\n" +
 					   "description: Test Description\r" +
 					   "tags:\r\n" +
@@ -345,7 +349,7 @@ public class EdgeCaseTests
 					   "Content with\nmixed\r\nline\rendings";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -361,7 +365,7 @@ public class EdgeCaseTests
 		CollectionAssert.Contains(tags.Cast<object>().ToArray(), "tag2");
 
 		// Verify content is preserved with original line endings
-		string body = Frontmatter.ExtractBody(result);
+		var body = Frontmatter.ExtractBody(result);
 		Assert.AreEqual("Content with\nmixed\r\nline\rendings", body);
 	}
 
@@ -372,13 +376,13 @@ public class EdgeCaseTests
 		string longPropertyName = new('a', 1000);
 		string longPropertyValue = new('b', 1000);
 
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"{longPropertyName}: {longPropertyValue}{Environment.NewLine}" +
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -392,8 +396,8 @@ public class EdgeCaseTests
 	public void CombineFrontmatter_WithConcurrentAccess_HandlesCorrectly()
 	{
 		// Arrange
-		string[] inputs = new string[100];
-		for (int i = 0; i < inputs.Length; i++)
+		var inputs = new string[100];
+		for (var i = 0; i < inputs.Length; i++)
 		{
 			inputs[i] = $"---{Environment.NewLine}" +
 						$"title{i}: Test Title {i}{Environment.NewLine}" +
@@ -410,7 +414,7 @@ public class EdgeCaseTests
 		{
 			try
 			{
-				string result = Frontmatter.CombineFrontmatter(inputs[i]);
+				var result = Frontmatter.CombineFrontmatter(inputs[i]);
 				var frontmatter = Frontmatter.ExtractFrontmatter(result);
 				if (frontmatter != null)
 				{
@@ -446,7 +450,7 @@ public class EdgeCaseTests
 		string largeValue = new('x', 1024 * 1024); // 1MB string
 		List<string> inputs = [];
 
-		for (int i = 0; i < 10; i++) // Will create ~10MB of data
+		for (var i = 0; i < 10; i++) // Will create ~10MB of data
 		{
 			inputs.Add($"---{Environment.NewLine}" +
 					  $"large_value_{i}: {largeValue}{Environment.NewLine}" +
@@ -457,9 +461,9 @@ public class EdgeCaseTests
 		// Act & Assert
 		var stopwatch = Stopwatch.StartNew();
 
-		foreach (string input in inputs)
+		foreach (var input in inputs)
 		{
-			string result = Frontmatter.CombineFrontmatter(input);
+			var result = Frontmatter.CombineFrontmatter(input);
 			Assert.IsNotNull(result);
 			var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 			Assert.IsNotNull(extractedFrontmatter);

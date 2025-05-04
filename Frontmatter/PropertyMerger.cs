@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter;
 
 using System.Collections.Concurrent;
@@ -33,7 +37,7 @@ internal static class PropertyMerger
 		string[] frontmatterKeys = [.. frontmatter.Keys];
 
 		// Initialize with known mappings
-		foreach (string? key in frontmatterKeys)
+		foreach (var key in frontmatterKeys)
 		{
 			propertyMappings[key] = GetCanonicalName(key, strategy, frontmatterKeys);
 		}
@@ -44,7 +48,7 @@ internal static class PropertyMerger
 		// Group properties by their canonical names and merge values
 		foreach (var group in propertyMappings.GroupBy(x => x.Value, x => x.Key))
 		{
-			string canonicalKey = group.Key;
+			var canonicalKey = group.Key;
 			var originalKeys = group.ToList();
 
 			MergePropertyGroup(frontmatter, mergedFrontmatter, canonicalKey, originalKeys);
@@ -56,7 +60,7 @@ internal static class PropertyMerger
 	private static string GetCanonicalName(string key, FrontmatterMergeStrategy strategy, string[] frontmatterKeys)
 	{
 		// Try to find in cache first
-		if (PropertyMergeCache.TryGetValue(key, out string? cachedName))
+		if (PropertyMergeCache.TryGetValue(key, out var cachedName))
 		{
 			return cachedName;
 		}
@@ -68,7 +72,7 @@ internal static class PropertyMerger
 			return key;
 		}
 
-		string canonicalName = strategy switch
+		var canonicalName = strategy switch
 		{
 			FrontmatterMergeStrategy.Conservative => GetConservativeCanonicalName(key),
 			FrontmatterMergeStrategy.Aggressive => GetAggressiveCanonicalName(key, frontmatterKeys),
@@ -88,20 +92,20 @@ internal static class PropertyMerger
 	}
 
 	private static string GetConservativeCanonicalName(string key) =>
-		PropertyMappings.All.TryGetValue(key, out string? knownName) ? knownName : key;
+		PropertyMappings.All.TryGetValue(key, out var knownName) ? knownName : key;
 
 	private static string GetAggressiveCanonicalName(string key, string[] frontmatterKeys)
 	{
-		string canonicalName = FindBasicCanonicalName(key, frontmatterKeys);
+		var canonicalName = FindBasicCanonicalName(key, frontmatterKeys);
 
-		bool isKnownMapping = PropertyMappings.All.ContainsKey(key);
-		bool hasExactMatch = frontmatterKeys.Any(k => k != key &&
+		var isKnownMapping = PropertyMappings.All.ContainsKey(key);
+		var hasExactMatch = frontmatterKeys.Any(k => k != key &&
 			string.Equals(NormalizePropertyName(k), NormalizePropertyName(key), StringComparison.OrdinalIgnoreCase));
-		bool isInSameCategory = IsInSameCategory(key, canonicalName);
+		var isInSameCategory = IsInSameCategory(key, canonicalName);
 
 		return !isKnownMapping && !hasExactMatch && !isInSameCategory
 			? key
-			: PropertyMappings.All.TryGetValue(canonicalName, out string? knownName) ? knownName : canonicalName;
+			: PropertyMappings.All.TryGetValue(canonicalName, out var knownName) ? knownName : canonicalName;
 	}
 
 	private static bool IsInSameCategory(string key, string canonicalName)
@@ -129,8 +133,8 @@ internal static class PropertyMerger
 		List<string> originalKeys)
 	{
 		// Get the first value to determine the type
-		string firstKey = originalKeys[0];
-		object firstValue = source[firstKey];
+		var firstKey = originalKeys[0];
+		var firstValue = source[firstKey];
 		if (firstValue == null)
 		{
 			return;
@@ -139,12 +143,12 @@ internal static class PropertyMerger
 		var firstType = firstValue.GetType();
 
 		// Check if all values have the same type
-		bool allSameType = originalKeys.All(k => source[k]?.GetType() == firstType);
+		var allSameType = originalKeys.All(k => source[k]?.GetType() == firstType);
 
 		if (!allSameType)
 		{
 			// If types are different, keep all properties separate
-			foreach (string key in originalKeys)
+			foreach (var key in originalKeys)
 			{
 				target[key] = source[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
 			}
@@ -171,9 +175,9 @@ internal static class PropertyMerger
 		List<string> originalKeys)
 	{
 		HashSet<object> mergedList = [];
-		foreach (string key in originalKeys)
+		foreach (var key in originalKeys)
 		{
-			object? value = source[key];
+			var value = source[key];
 			if (value is IList<object> list)
 			{
 				mergedList.UnionWith(list);
@@ -196,44 +200,44 @@ internal static class PropertyMerger
 	private static string FindBasicCanonicalName(string key, string[] existingKeys)
 	{
 		// First check if it's a known property
-		if (PropertyMappings.All.TryGetValue(key, out string? canonicalName))
+		if (PropertyMappings.All.TryGetValue(key, out var canonicalName))
 		{
 			return canonicalName;
 		}
 
 		// Remove common prefixes/suffixes and special characters
-		string normalizedKey = NormalizePropertyName(key);
+		var normalizedKey = NormalizePropertyName(key);
 
 		// Look for exact matches after normalization
-		foreach (string existingKey in existingKeys)
+		foreach (var existingKey in existingKeys)
 		{
 			if (existingKey == key)
 			{
 				continue;
 			}
 
-			string normalizedExisting = NormalizePropertyName(existingKey);
+			var normalizedExisting = NormalizePropertyName(existingKey);
 			if (string.Equals(normalizedKey, normalizedExisting, StringComparison.OrdinalIgnoreCase))
 			{
 				// If the existing key is a known property, use its canonical name
-				return PropertyMappings.All.TryGetValue(existingKey, out string? knownName) ? knownName : existingKey;
+				return PropertyMappings.All.TryGetValue(existingKey, out var knownName) ? knownName : existingKey;
 			}
 		}
 
 		// Look for partial matches
-		foreach (string existingKey in existingKeys)
+		foreach (var existingKey in existingKeys)
 		{
 			if (existingKey == key)
 			{
 				continue;
 			}
 
-			string normalizedExisting = NormalizePropertyName(existingKey);
+			var normalizedExisting = NormalizePropertyName(existingKey);
 			if (normalizedKey.Contains(normalizedExisting, StringComparison.OrdinalIgnoreCase) ||
 				normalizedExisting.Contains(normalizedKey, StringComparison.OrdinalIgnoreCase))
 			{
 				// If the existing key is a known property, use its canonical name
-				return PropertyMappings.All.TryGetValue(existingKey, out string? knownName) ? knownName : existingKey;
+				return PropertyMappings.All.TryGetValue(existingKey, out var knownName) ? knownName : existingKey;
 			}
 		}
 
@@ -249,14 +253,14 @@ internal static class PropertyMerger
 	private static string FindSemanticCanonicalName(string key, string[] existingKeys)
 	{
 		// First try basic matching (which includes checking PropertyMappings.All)
-		string basicMatch = FindBasicCanonicalName(key, existingKeys);
+		var basicMatch = FindBasicCanonicalName(key, existingKeys);
 		if (basicMatch != key)
 		{
 			return basicMatch;
 		}
 
 		// Then try more aggressive matching using word similarity
-		string[] keyWords = NormalizePropertyName(key).Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries);
+		var keyWords = NormalizePropertyName(key).Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries);
 
 		// Find best match among existing keys
 		var bestMatch = existingKeys
@@ -285,7 +289,7 @@ internal static class PropertyMerger
 		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
 
 		// Remove prefixes
-		foreach (string prefix in prefixes)
+		foreach (var prefix in prefixes)
 		{
 			if (key.StartsWith(prefix, StringComparison.Ordinal))
 			{
@@ -295,7 +299,7 @@ internal static class PropertyMerger
 		}
 
 		// Remove suffixes
-		foreach (string suffix in suffixes)
+		foreach (var suffix in suffixes)
 		{
 			if (key.EndsWith(suffix, StringComparison.Ordinal))
 			{
@@ -310,10 +314,10 @@ internal static class PropertyMerger
 
 	private static int CalculateWordMatchScore(string[] words1, string[] words2)
 	{
-		int score = 0;
-		foreach (string word1 in words1)
+		var score = 0;
+		foreach (var word1 in words1)
 		{
-			foreach (string word2 in words2)
+			foreach (var word2 in words2)
 			{
 				if (word1 == word2)
 				{

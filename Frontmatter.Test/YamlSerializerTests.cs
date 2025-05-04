@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter.Test;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -9,10 +13,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithValidYaml_ReturnsTrue()
 	{
 		// Arrange
-		string yamlContent = "title: Test Title\nauthor: Test Author";
+		var yamlContent = "title: Test Title\nauthor: Test Author";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsTrue(result);
@@ -26,10 +30,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithInvalidYaml_ReturnsFalse()
 	{
 		// Arrange
-		string yamlContent = "title: Test Title\nauthor: \n  invalidindent\n  : broken: syntax";
+		var yamlContent = "title: Test Title\nauthor: \n  invalidindent\n  : broken: syntax";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -40,10 +44,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithEmptyString_ReturnsFalse()
 	{
 		// Arrange
-		string yamlContent = "";
+		var yamlContent = "";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -54,10 +58,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithWhitespaceOnly_ReturnsFalse()
 	{
 		// Arrange
-		string yamlContent = "   \n  \t  ";
+		var yamlContent = "   \n  \t  ";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -68,10 +72,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithNonDictionaryYaml_ReturnsFalse()
 	{
 		// Arrange - a YAML array instead of a dictionary
-		string yamlContent = "- item1\n- item2\n- item3";
+		var yamlContent = "- item1\n- item2\n- item3";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -82,10 +86,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithSpecialCharacters_ParsesCorrectly()
 	{
 		// Arrange
-		string yamlContent = "title: \"Title with: colon\"\nauthor: 'Name with ''quotes'''\nsymbols: \"$%^&*()\"";
+		var yamlContent = "title: \"Title with: colon\"\nauthor: 'Name with ''quotes'''\nsymbols: \"$%^&*()\"";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsTrue(result);
@@ -100,17 +104,17 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithMultilineStrings_ParsesCorrectly()
 	{
 		// Arrange
-		string yamlContent = "title: Test Title\ndescription: |\n  This is a multiline\n  description that spans\n  multiple lines.";
+		var yamlContent = "title: Test Title\ndescription: |\n  This is a multiline\n  description that spans\n  multiple lines.";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsTrue(result);
 		Assert.IsNotNull(parsedObject);
 		Assert.AreEqual(2, parsedObject.Count);
 
-		string description = parsedObject["description"].ToString()!;
+		var description = parsedObject["description"].ToString()!;
 		Assert.IsTrue(description.Contains("This is a multiline"));
 		Assert.IsTrue(description.Contains("description that spans"));
 		Assert.IsTrue(description.Contains("multiple lines."));
@@ -120,17 +124,17 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithFoldedMultilineStrings_ParsesCorrectly()
 	{
 		// Arrange
-		string yamlContent = "title: Test Title\ndescription: >\n  This is a folded multiline\n  description that should\n  be joined with spaces.";
+		var yamlContent = "title: Test Title\ndescription: >\n  This is a folded multiline\n  description that should\n  be joined with spaces.";
 
 		// Act
-		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
 
 		// Assert
 		Assert.IsTrue(result);
 		Assert.IsNotNull(parsedObject);
 		Assert.AreEqual(2, parsedObject.Count);
 
-		string description = parsedObject["description"].ToString()!;
+		var description = parsedObject["description"].ToString()!;
 		Assert.IsTrue(description.Contains("This is a folded multiline description that should be joined with spaces"));
 	}
 
@@ -145,7 +149,7 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string result = YamlSerializer.SerializeYamlObject(dictionary);
+		var result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		Assert.IsTrue(result.Contains("title: Test Title"));
@@ -159,7 +163,7 @@ public class YamlSerializerTests
 		var dictionary = new Dictionary<string, object>();
 
 		// Act
-		string result = YamlSerializer.SerializeYamlObject(dictionary);
+		var result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		Assert.IsTrue(string.IsNullOrWhiteSpace(result) || result == "{}" || result == "{}");
@@ -175,7 +179,7 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string result = YamlSerializer.SerializeYamlObject(dictionary);
+		var result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		// The colon should be properly escaped in the output
@@ -197,7 +201,7 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string result = YamlSerializer.SerializeYamlObject(dictionary);
+		var result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		Assert.IsTrue(result.Contains("title: Test Title"));
@@ -239,7 +243,7 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string result = YamlSerializer.SerializeYamlObject(dictionary);
+		var result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		Assert.IsTrue(result.Contains("title: Complex Document"));
@@ -265,7 +269,7 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string result = YamlSerializer.SerializeYamlObject(dictionary);
+		var result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		// The multiline string should be properly serialized with the pipe character
@@ -288,8 +292,8 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
-		bool parseResult = YamlSerializer.TryParseYamlObject(serialized, out var parsedDictionary);
+		var serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
+		var parseResult = YamlSerializer.TryParseYamlObject(serialized, out var parsedDictionary);
 
 		// Assert
 		Assert.IsTrue(parseResult);
@@ -301,8 +305,8 @@ public class YamlSerializerTests
 		Assert.AreEqual(originalDictionary["count"].ToString(), parsedDictionary["count"]?.ToString());
 
 		// YAML deserializer might return "true" instead of True, so compare as strings
-		string? originalEnabledString = originalDictionary["enabled"]?.ToString()?.ToLowerInvariant();
-		string? parsedEnabledString = parsedDictionary["enabled"]?.ToString()?.ToLowerInvariant();
+		var originalEnabledString = originalDictionary["enabled"]?.ToString()?.ToLowerInvariant();
+		var parsedEnabledString = parsedDictionary["enabled"]?.ToString()?.ToLowerInvariant();
 		Assert.AreEqual(originalEnabledString, parsedEnabledString);
 
 		// Check the list
@@ -332,8 +336,8 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		string serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
-		bool parseResult = YamlSerializer.TryParseYamlObject(serialized, out var parsedDictionary);
+		var serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
+		var parseResult = YamlSerializer.TryParseYamlObject(serialized, out var parsedDictionary);
 
 		// Assert
 		Assert.IsTrue(parseResult);
@@ -359,10 +363,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithCachedValues_ReturnsCachedResult()
 	{
 		// Arrange
-		string yamlContent = "title: Test Title\nauthor: Test Author";
+		var yamlContent = "title: Test Title\nauthor: Test Author";
 
 		// Act - First parse should add to cache
-		bool firstParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var firstResult);
+		var firstParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var firstResult);
 		Assert.IsTrue(firstParseResult, "First parse should succeed");
 		Assert.IsNotNull(firstResult, "First parse result should not be null");
 
@@ -370,7 +374,7 @@ public class YamlSerializerTests
 		firstResult["marker"] = "modified";
 
 		// Act - Second parse should retrieve from cache but return a new copy
-		bool secondParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondResult);
+		var secondParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondResult);
 
 		// Assert
 		Assert.IsTrue(secondParseResult);
@@ -383,7 +387,7 @@ public class YamlSerializerTests
 		yamlContent = "title: Test Title\nmetadata:\n  tags:\n    - tag1\n    - tag2";
 
 		// First parse with nested structure
-		bool nestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var nestedResult);
+		var nestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var nestedResult);
 		Assert.IsTrue(nestedParseResult);
 		Assert.IsNotNull(nestedResult);
 
@@ -395,7 +399,7 @@ public class YamlSerializerTests
 		tags.Add("modified");
 
 		// Get another copy from cache
-		bool secondNestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondNestedResult);
+		var secondNestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondNestedResult);
 		Assert.IsTrue(secondNestedParseResult);
 		Assert.IsNotNull(secondNestedResult);
 
@@ -420,13 +424,13 @@ public class YamlSerializerTests
 		};
 
 		// Act - First serialization should add to cache
-		string firstResult = YamlSerializer.SerializeYamlObject(dictionary);
+		var firstResult = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Modify the dictionary (should not affect cached result)
 		dictionary["title"] = "Modified Title";
 
 		// Act - Second serialization should retrieve from cache
-		string secondResult = YamlSerializer.SerializeYamlObject(dictionary);
+		var secondResult = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert - Cache should not be used because the dictionary content has changed
 		Assert.IsTrue(secondResult.Contains("Modified Title"));

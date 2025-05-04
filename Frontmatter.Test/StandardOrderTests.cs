@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter.Test;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -9,7 +13,7 @@ public class StandardOrderTests
 	public void PropertyNames_ReturnsNonEmptyArray()
 	{
 		// Act
-		string[] propertyNames = StandardOrder.PropertyNames;
+		var propertyNames = StandardOrder.PropertyNames;
 
 		// Assert
 		Assert.IsNotNull(propertyNames);
@@ -20,7 +24,7 @@ public class StandardOrderTests
 	public void PropertyNames_ContainsStandardProperties()
 	{
 		// Act
-		string[] propertyNames = StandardOrder.PropertyNames;
+		var propertyNames = StandardOrder.PropertyNames;
 
 		// Assert
 		// Check that essential frontmatter properties are included
@@ -36,13 +40,13 @@ public class StandardOrderTests
 	public void PropertyNames_CorePropertiesAppearFirst()
 	{
 		// Act
-		string[] propertyNames = StandardOrder.PropertyNames;
+		var propertyNames = StandardOrder.PropertyNames;
 
 		// Assert
 		// Check that core properties appear in the expected order
-		int titleIndex = Array.IndexOf(propertyNames, "title");
-		int dateIndex = Array.IndexOf(propertyNames, "date");
-		int authorIndex = Array.IndexOf(propertyNames, "author");
+		var titleIndex = Array.IndexOf(propertyNames, "title");
+		var dateIndex = Array.IndexOf(propertyNames, "date");
+		var authorIndex = Array.IndexOf(propertyNames, "author");
 
 		// Title should be one of the first properties
 		Assert.IsTrue(titleIndex < 10);
@@ -58,13 +62,13 @@ public class StandardOrderTests
 	public void PropertyNames_RelatedPropertiesGroupedTogether()
 	{
 		// Act
-		string[] propertyNames = StandardOrder.PropertyNames;
+		var propertyNames = StandardOrder.PropertyNames;
 
 		// Assert
 		// Check that related properties are grouped together
-		int tagsIndex = Array.IndexOf(propertyNames, "tags");
-		int categoriesIndex = Array.IndexOf(propertyNames, "categories");
-		int topicsIndex = Array.IndexOf(propertyNames, "topics");
+		var tagsIndex = Array.IndexOf(propertyNames, "tags");
+		var categoriesIndex = Array.IndexOf(propertyNames, "categories");
+		var topicsIndex = Array.IndexOf(propertyNames, "topics");
 
 		// Tags and categories should be near each other
 		Assert.IsTrue(Math.Abs(tagsIndex - categoriesIndex) < 10);
@@ -80,7 +84,7 @@ public class StandardOrderTests
 	public void CombineFrontmatter_WithSortedOrder_SortsAccordingToStandardOrder()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"author: Test Author{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"description: Test Description{Environment.NewLine}" +
@@ -91,13 +95,13 @@ public class StandardOrderTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
 
 		// Extract sections from the result for position comparison
-		int titleIndex = result.IndexOf("title:");
-		int authorIndex = result.IndexOf("author:");
-		int descriptionIndex = result.IndexOf("description:");
-		int tagsIndex = result.IndexOf("tags:");
+		var titleIndex = result.IndexOf("title:");
+		var authorIndex = result.IndexOf("author:");
+		var descriptionIndex = result.IndexOf("description:");
+		var tagsIndex = result.IndexOf("tags:");
 
 		// Assert
 		// Title should appear before author
@@ -117,7 +121,7 @@ public class StandardOrderTests
 	public void CombineFrontmatter_WithAsIsOrder_PreservesOriginalOrder()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"author: Test Author{Environment.NewLine}" +
 					   $"custom_field: Custom Value{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
@@ -125,12 +129,12 @@ public class StandardOrderTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs);
 
 		// Extract sections from the result for position comparison
-		int authorIndex = result.IndexOf("author:");
-		int customFieldIndex = result.IndexOf("custom_field:");
-		int titleIndex = result.IndexOf("title:");
+		var authorIndex = result.IndexOf("author:");
+		var customFieldIndex = result.IndexOf("custom_field:");
+		var titleIndex = result.IndexOf("title:");
 
 		// Assert
 		// Order should be preserved: author, custom_field, title
@@ -142,7 +146,7 @@ public class StandardOrderTests
 	public void CombineFrontmatter_WithSortedOrder_HandlesCustomProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"author: Test Author{Environment.NewLine}" +
 					   $"custom_field: Custom Value{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
@@ -150,12 +154,12 @@ public class StandardOrderTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
 
 		// Extract sections from the result for position comparison
-		int titleIndex = result.IndexOf("title:");
-		int authorIndex = result.IndexOf("author:");
-		int customFieldIndex = result.IndexOf("custom_field:");
+		var titleIndex = result.IndexOf("title:");
+		var authorIndex = result.IndexOf("author:");
+		var customFieldIndex = result.IndexOf("custom_field:");
 
 		// Assert
 		// Standard properties should be sorted first
@@ -169,7 +173,7 @@ public class StandardOrderTests
 	public void CombineFrontmatter_WithSortedOrder_HandlesDatePropertiesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"updated: 2023-02-01{Environment.NewLine}" +
 					   $"created: 2023-01-01{Environment.NewLine}" +
 					   $"date: 2023-03-01{Environment.NewLine}" +
@@ -177,12 +181,12 @@ public class StandardOrderTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
 
 		// Extract sections from the result for position comparison
-		int dateIndex = result.IndexOf("date:");
-		int createdIndex = result.IndexOf("created:");
-		int updatedIndex = result.IndexOf("updated:");
+		var dateIndex = result.IndexOf("date:");
+		var createdIndex = result.IndexOf("created:");
+		var updatedIndex = result.IndexOf("updated:");
 
 		// Assert
 		// Date properties should be grouped together and in the standard order
@@ -194,7 +198,7 @@ public class StandardOrderTests
 	public void CombineFrontmatter_WithSortedOrderAndMergeStrategy_AppliesBothCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"writer: Test Author{Environment.NewLine}" + // Should be merged to "author"
 					   $"headline: Test Title{Environment.NewLine}" + // Should be merged to "title"
 					   $"summary: Test Description{Environment.NewLine}" + // Should be merged to "description"
@@ -202,15 +206,15 @@ public class StandardOrderTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted, FrontmatterMergeStrategy.Conservative);
 
 		// Extract the frontmatter to verify property names and order
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Extract sections from the result for position comparison
-		int titleIndex = result.IndexOf("title:");
-		int descriptionIndex = result.IndexOf("description:");
-		int authorIndex = result.IndexOf("author:");
+		var titleIndex = result.IndexOf("title:");
+		var descriptionIndex = result.IndexOf("description:");
+		var authorIndex = result.IndexOf("author:");
 
 		// Assert
 		// Properties should be merged to standard names
@@ -228,7 +232,7 @@ public class StandardOrderTests
 	public void CombineFrontmatter_WithAllOptions_ProducesCleanSortedStandardizedFrontmatter()
 	{
 		// Arrange - a complex case with mixed property names and order
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"writer: John Doe{Environment.NewLine}" +
 					   $"post_date: 2023-01-15{Environment.NewLine}" +
 					   $"headline: Main Article{Environment.NewLine}" +
@@ -241,7 +245,7 @@ public class StandardOrderTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard, FrontmatterOrder.Sorted, FrontmatterMergeStrategy.Conservative);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard, FrontmatterOrder.Sorted, FrontmatterMergeStrategy.Conservative);
 
 		// Extract the frontmatter to verify property names and order
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -257,11 +261,11 @@ public class StandardOrderTests
 		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"));
 
 		// Check position in the raw output for order verification
-		int titleIndex = result.IndexOf("title:");
-		int descriptionIndex = result.IndexOf("description:");
-		int dateIndex = result.IndexOf("date:");
-		int authorIndex = result.IndexOf("author:");
-		int tagsIndex = result.IndexOf("tags:");
+		var titleIndex = result.IndexOf("title:");
+		var descriptionIndex = result.IndexOf("description:");
+		var dateIndex = result.IndexOf("date:");
+		var authorIndex = result.IndexOf("author:");
+		var tagsIndex = result.IndexOf("tags:");
 
 		// Verify order is correct according to StandardOrder
 		Assert.IsTrue(titleIndex < descriptionIndex);

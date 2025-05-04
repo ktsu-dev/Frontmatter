@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter;
 
 using System.Collections.Concurrent;
@@ -49,7 +53,7 @@ public static class YamlSerializer
 		}
 
 		// Compute a hash of the content for the cache key
-		uint cacheKey = HashUtil.ComputeHash(input);
+		var cacheKey = HashUtil.ComputeHash(input);
 
 		// Try to get from cache first
 		if (ParsedYamlCache.TryGetValue(cacheKey, out var cachedResult))
@@ -75,7 +79,7 @@ public static class YamlSerializer
 			{
 				if (pair.Key != null)
 				{
-					string key = pair.Key.ToString()!;
+					var key = pair.Key.ToString()!;
 					// Only add the key if it doesn't already exist
 					if (!result.ContainsKey(key))
 					{

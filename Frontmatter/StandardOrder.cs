@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter;
 
 /// <summary>
@@ -215,8 +219,8 @@ public static class StandardOrder
 		}
 
 		// Get the indices from the standard property list
-		int indexA = Array.IndexOf(PropertyNames, a.ToLowerInvariant());
-		int indexB = Array.IndexOf(PropertyNames, b.ToLowerInvariant());
+		var indexA = Array.IndexOf(PropertyNames, a.ToLowerInvariant());
+		var indexB = Array.IndexOf(PropertyNames, b.ToLowerInvariant());
 
 		// If both properties are not in the standard list, sort them alphabetically
 		if (indexA < 0 && indexB < 0)

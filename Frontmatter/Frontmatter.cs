@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter;
 
 using System;
@@ -62,16 +66,16 @@ public static class Frontmatter
 		ArgumentNullException.ThrowIfNull(input);
 
 		// Generate a unique cache key based on the content and options
-		uint optionsHash = (uint)propertyNamingMode | ((uint)orderMode << 8) | ((uint)mergeStrategy << 16);
-		uint cacheKey = HashUtil.CreateCacheKey(input, optionsHash);
+		var optionsHash = (uint)propertyNamingMode | ((uint)orderMode << 8) | ((uint)mergeStrategy << 16);
+		var cacheKey = HashUtil.CreateCacheKey(input, optionsHash);
 
 		// Try to get from cache first
-		if (ProcessedFrontmatterCache.TryGetValue(cacheKey, out string? cachedResult))
+		if (ProcessedFrontmatterCache.TryGetValue(cacheKey, out var cachedResult))
 		{
 			return cachedResult;
 		}
 
-		var frontmatterObjects = ExtractFrontmatterObjects(input, out string body);
+		var frontmatterObjects = ExtractFrontmatterObjects(input, out var body);
 
 		if (frontmatterObjects.Count == 0)
 		{
@@ -104,10 +108,10 @@ public static class Frontmatter
 			combinedFrontmatterObject = SortFrontmatterProperties(combinedFrontmatterObject);
 		}
 
-		string combinedFrontmatter = YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim();
+		var combinedFrontmatter = YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim();
 
-		string nl = Environment.NewLine;
-		string result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
+		var nl = Environment.NewLine;
+		var result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
 
 		// Cache the processed result
 		ProcessedFrontmatterCache.TryAdd(cacheKey, result);
@@ -170,8 +174,8 @@ public static class Frontmatter
 			return ReplaceFrontmatter(input, combined);
 		}
 
-		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
-		string nl = Environment.NewLine;
+		var yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
+		var nl = Environment.NewLine;
 		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{input.Trim()}{nl}";
 	}
 
@@ -191,9 +195,9 @@ public static class Frontmatter
 			return RemoveFrontmatter(input);
 		}
 
-		ExtractFrontmatterObjects(input, out string body);
-		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
-		string nl = Environment.NewLine;
+		ExtractFrontmatterObjects(input, out var body);
+		var yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
+		var nl = Environment.NewLine;
 		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body.Trim()}{nl}";
 	}
 
@@ -212,7 +216,7 @@ public static class Frontmatter
 			return input;
 		}
 
-		ExtractFrontmatterObjects(input, out string body);
+		ExtractFrontmatterObjects(input, out var body);
 		return body.Trim() + Environment.NewLine;
 	}
 
@@ -226,7 +230,7 @@ public static class Frontmatter
 	{
 		ArgumentNullException.ThrowIfNull(input);
 
-		ExtractFrontmatterObjects(input, out string body);
+		ExtractFrontmatterObjects(input, out var body);
 		return body.Trim();
 	}
 
@@ -248,9 +252,9 @@ public static class Frontmatter
 		Dictionary<string, object> sortedFrontmatter = [];
 
 		// First add properties in the standard order (if they exist)
-		foreach (string key in StandardOrder.PropertyNames)
+		foreach (var key in StandardOrder.PropertyNames)
 		{
-			if (frontmatter.TryGetValue(key, out object? value))
+			if (frontmatter.TryGetValue(key, out var value))
 			{
 				sortedFrontmatter[key] = value;
 			}
@@ -285,12 +289,12 @@ public static class Frontmatter
 			return frontmatterObjects;
 		}
 
-		string[] sections = input.Split([FrontmatterDelimiter + Environment.NewLine], StringSplitOptions.None);
+		var sections = input.Split([FrontmatterDelimiter + Environment.NewLine], StringSplitOptions.None);
 		body = string.Join(FrontmatterDelimiter + Environment.NewLine, sections.Skip(2));
 
-		for (int i = 1; i < sections.Length; i += 2)
+		for (var i = 1; i < sections.Length; i += 2)
 		{
-			string section = sections[i].Trim();
+			var section = sections[i].Trim();
 			if (string.IsNullOrWhiteSpace(section))
 			{
 				continue;

@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter.Test;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -9,10 +13,10 @@ public class FrontmatterTests
 	public void HasFrontmatter_WithFrontmatter_ReturnsTrue()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		bool result = Frontmatter.HasFrontmatter(input);
+		var result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
 		Assert.IsTrue(result);
@@ -22,10 +26,10 @@ public class FrontmatterTests
 	public void HasFrontmatter_WithoutFrontmatter_ReturnsFalse()
 	{
 		// Arrange
-		string input = "Just content without frontmatter";
+		var input = "Just content without frontmatter";
 
 		// Act
-		bool result = Frontmatter.HasFrontmatter(input);
+		var result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -35,10 +39,10 @@ public class FrontmatterTests
 	public void HasFrontmatter_WithEmptyContent_ReturnsFalse()
 	{
 		// Arrange
-		string input = string.Empty;
+		var input = string.Empty;
 
 		// Act
-		bool result = Frontmatter.HasFrontmatter(input);
+		var result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -48,10 +52,10 @@ public class FrontmatterTests
 	public void HasFrontmatter_WithContentStartingWithHyphen_ReturnsFalse()
 	{
 		// Arrange
-		string input = $"--{Environment.NewLine}This is not frontmatter{Environment.NewLine}";
+		var input = $"--{Environment.NewLine}This is not frontmatter{Environment.NewLine}";
 
 		// Act
-		bool result = Frontmatter.HasFrontmatter(input);
+		var result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
 		Assert.IsFalse(result);
@@ -61,7 +65,7 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithValidFrontmatter_ReturnsFrontmatterDictionary()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
 		var result = Frontmatter.ExtractFrontmatter(input);
@@ -76,7 +80,7 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithMultilineValues_ParsesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
 		var result = Frontmatter.ExtractFrontmatter(input);
@@ -93,7 +97,7 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithEmptyFrontmatter_ReturnsEmptyDictionary()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
 		var result = Frontmatter.ExtractFrontmatter(input);
@@ -107,7 +111,7 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithoutFrontmatter_ReturnsNull()
 	{
 		// Arrange
-		string input = "Just content without frontmatter";
+		var input = "Just content without frontmatter";
 
 		// Act
 		var result = Frontmatter.ExtractFrontmatter(input);
@@ -120,7 +124,7 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithComplexTypes_ParsesCorrectly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}tags:{Environment.NewLine}- tag1{Environment.NewLine}- tag2{Environment.NewLine}nested:{Environment.NewLine}  key1: value1{Environment.NewLine}  key2: value2{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}tags:{Environment.NewLine}- tag1{Environment.NewLine}- tag2{Environment.NewLine}nested:{Environment.NewLine}  key1: value1{Environment.NewLine}  key2: value2{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
 		var result = Frontmatter.ExtractFrontmatter(input);
@@ -149,10 +153,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithFrontmatter_ReturnsBodyOnly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		string result = Frontmatter.ExtractBody(input);
+		var result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual("Content", result);
@@ -162,10 +166,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithEmptyFrontmatter_ReturnsBodyOnly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		string result = Frontmatter.ExtractBody(input);
+		var result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual("Content", result);
@@ -175,10 +179,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithMultilineFrontmatter_ReturnsBodyOnly()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content with multiple lines{Environment.NewLine}Second line{Environment.NewLine}Third line";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content with multiple lines{Environment.NewLine}Second line{Environment.NewLine}Third line";
 
 		// Act
-		string result = Frontmatter.ExtractBody(input);
+		var result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual($"Content with multiple lines{Environment.NewLine}Second line{Environment.NewLine}Third line", result);
@@ -188,10 +192,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithoutFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		string input = "Just content without frontmatter";
+		var input = "Just content without frontmatter";
 
 		// Act
-		string result = Frontmatter.ExtractBody(input);
+		var result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -201,10 +205,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithEmptyContent_ReturnsEmptyString()
 	{
 		// Arrange
-		string input = string.Empty;
+		var input = string.Empty;
 
 		// Act
-		string result = Frontmatter.ExtractBody(input);
+		var result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -214,11 +218,11 @@ public class FrontmatterTests
 	public void AddFrontmatter_ToContentWithoutFrontmatter_AddsFrontmatter()
 	{
 		// Arrange
-		string input = "Content without frontmatter";
+		var input = "Content without frontmatter";
 		var frontmatter = new Dictionary<string, object> { { "title", "Added Title" } };
 
 		// Act
-		string result = Frontmatter.AddFrontmatter(input, frontmatter);
+		var result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
 		Assert.IsTrue(Frontmatter.HasFrontmatter(result));
@@ -232,10 +236,10 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithNullFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		string input = "Content without frontmatter";
+		var input = "Content without frontmatter";
 
 		// Act
-		string result = Frontmatter.AddFrontmatter(input, null!);
+		var result = Frontmatter.AddFrontmatter(input, null!);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -245,11 +249,11 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithEmptyFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		string input = "Content without frontmatter";
+		var input = "Content without frontmatter";
 		var frontmatter = new Dictionary<string, object>();
 
 		// Act
-		string result = Frontmatter.AddFrontmatter(input, frontmatter);
+		var result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -259,11 +263,11 @@ public class FrontmatterTests
 	public void AddFrontmatter_ToContentWithExistingFrontmatter_CombinesFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
 		var frontmatter = new Dictionary<string, object> { { "author", "Test Author" } };
 
 		// Act
-		string result = Frontmatter.AddFrontmatter(input, frontmatter);
+		var result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -276,11 +280,11 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithOverlappingKeys_UsesOriginalValue()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
 		var frontmatter = new Dictionary<string, object> { { "title", "New Title" } };
 
 		// Act
-		string result = Frontmatter.AddFrontmatter(input, frontmatter);
+		var result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -293,7 +297,7 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithComplexValues_SerializesCorrectly()
 	{
 		// Arrange
-		string input = "Content without frontmatter";
+		var input = "Content without frontmatter";
 		var frontmatter = new Dictionary<string, object> {
 			{ "title", "Complex Title" },
 			{ "tags", valueArr2 },
@@ -304,7 +308,7 @@ public class FrontmatterTests
 		};
 
 		// Act
-		string result = Frontmatter.AddFrontmatter(input, frontmatter);
+		var result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -330,10 +334,10 @@ public class FrontmatterTests
 	public void RemoveFrontmatter_WithFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		string result = Frontmatter.RemoveFrontmatter(input);
+		var result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
 		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
@@ -344,10 +348,10 @@ public class FrontmatterTests
 	public void RemoveFrontmatter_WithEmptyFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		string result = Frontmatter.RemoveFrontmatter(input);
+		var result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
 		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
@@ -358,10 +362,10 @@ public class FrontmatterTests
 	public void RemoveFrontmatter_WithoutFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		string input = "Just content without frontmatter";
+		var input = "Just content without frontmatter";
 
 		// Act
-		string result = Frontmatter.RemoveFrontmatter(input);
+		var result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -371,10 +375,10 @@ public class FrontmatterTests
 	public void RemoveFrontmatter_WithEmptyContent_ReturnsEmptyString()
 	{
 		// Arrange
-		string input = string.Empty;
+		var input = string.Empty;
 
 		// Act
-		string result = Frontmatter.RemoveFrontmatter(input);
+		var result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -384,11 +388,11 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithExistingFrontmatter_ReplacesFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
 		var replacement = new Dictionary<string, object> { { "title", "New Title" } };
 
 		// Act
-		string result = Frontmatter.ReplaceFrontmatter(input, replacement);
+		var result = Frontmatter.ReplaceFrontmatter(input, replacement);
 
 		// Assert
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -401,11 +405,11 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithoutExistingFrontmatter_AddsFrontmatter()
 	{
 		// Arrange
-		string input = "Content without frontmatter";
+		var input = "Content without frontmatter";
 		var replacement = new Dictionary<string, object> { { "title", "New Title" } };
 
 		// Act
-		string result = Frontmatter.ReplaceFrontmatter(input, replacement);
+		var result = Frontmatter.ReplaceFrontmatter(input, replacement);
 
 		// Assert
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
@@ -418,10 +422,10 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithNullFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		string result = Frontmatter.ReplaceFrontmatter(input, null!);
+		var result = Frontmatter.ReplaceFrontmatter(input, null!);
 
 		// Assert
 		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
@@ -432,11 +436,11 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithEmptyFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
 		var replacement = new Dictionary<string, object>();
 
 		// Act
-		string result = Frontmatter.ReplaceFrontmatter(input, replacement);
+		var result = Frontmatter.ReplaceFrontmatter(input, replacement);
 
 		// Assert
 		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
@@ -455,7 +459,7 @@ public class FrontmatterTests
 		};
 
 		// Act
-		string result = Frontmatter.SerializeFrontmatter(frontmatter);
+		var result = Frontmatter.SerializeFrontmatter(frontmatter);
 
 		// Assert
 		Assert.IsTrue(result.Contains("title: Test Title"));
@@ -482,7 +486,7 @@ public class FrontmatterTests
 		};
 
 		// Act
-		string result = Frontmatter.SerializeFrontmatter(frontmatter);
+		var result = Frontmatter.SerializeFrontmatter(frontmatter);
 
 		// Assert
 		Assert.IsTrue(result.Contains("title: Test Title"));
@@ -503,7 +507,7 @@ public class FrontmatterTests
 		var frontmatter = new Dictionary<string, object>();
 
 		// Act
-		string result = Frontmatter.SerializeFrontmatter(frontmatter);
+		var result = Frontmatter.SerializeFrontmatter(frontmatter);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -513,7 +517,7 @@ public class FrontmatterTests
 	public void SerializeFrontmatter_WithNullDictionary_ReturnsEmptyString()
 	{
 		// Act
-		string result = Frontmatter.SerializeFrontmatter(null!);
+		var result = Frontmatter.SerializeFrontmatter(null!);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -523,7 +527,7 @@ public class FrontmatterTests
 	public void CombineFrontmatterRoundTrip_PreservesAllData()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Original Title{Environment.NewLine}" +
 					   $"author: Original Author{Environment.NewLine}" +
 					   $"tags:{Environment.NewLine}" +
@@ -539,7 +543,7 @@ public class FrontmatterTests
 					   $"More content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input);
+		var result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
 		Assert.IsTrue(Frontmatter.HasFrontmatter(result));
@@ -556,7 +560,7 @@ public class FrontmatterTests
 		Assert.IsTrue(extractedFrontmatter.ContainsKey("keywords"));
 
 		// Check content is correctly preserved
-		string body = Frontmatter.ExtractBody(result);
+		var body = Frontmatter.ExtractBody(result);
 		Assert.IsTrue(body.Contains("Original content"));
 		Assert.IsTrue(body.Contains("More content"));
 	}
@@ -565,13 +569,13 @@ public class FrontmatterTests
 	public void CacheConsistency_MultipleCalls_ReturnsSameResult()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act - First call should process and cache
-		string firstResult = Frontmatter.CombineFrontmatter(input);
+		var firstResult = Frontmatter.CombineFrontmatter(input);
 
 		// Act - Second call should use cache
-		string secondResult = Frontmatter.CombineFrontmatter(input);
+		var secondResult = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(firstResult, secondResult);

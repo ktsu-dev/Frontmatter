@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter.Test;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -9,14 +13,14 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_StandardizesPropertyNames()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"headline: Test Title{Environment.NewLine}" + // Should be standardized to "title"
 					   $"writer: Test Author{Environment.NewLine}" +  // Should be standardized to "author"
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -32,14 +36,14 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithAsIsNaming_PreservesOriginalPropertyNames()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"headline: Test Title{Environment.NewLine}" +
 					   $"writer: Test Author{Environment.NewLine}" +
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -55,7 +59,7 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_HandlesMultipleVariantsOfSameProperty()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"headline: First Title{Environment.NewLine}" +  // Should be standardized to "title"
 					   $"title: Second Title{Environment.NewLine}" +    // Already standard
 					   $"post-title: Third Title{Environment.NewLine}" + // Should be standardized to "title"
@@ -63,7 +67,7 @@ public class NameStandardizerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -78,14 +82,14 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_PreservesUnknownProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"title: Test Title{Environment.NewLine}" +
 					   $"custom_property: Custom Value{Environment.NewLine}" + // Not in standard properties
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -101,14 +105,14 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_StandardizesSimilarProperties()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"desc: Short description{Environment.NewLine}" +      // Should be standardized to "description"
 					   $"abstract: Longer description{Environment.NewLine}" + // Should be standardized to "description"
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -121,10 +125,10 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_HandlesEmptyFrontmatter()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -136,7 +140,7 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_PreservesDataTypes()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"publish_date: 2023-01-01{Environment.NewLine}" + // Should be standardized to "date"
 					   $"tags:{Environment.NewLine}" +
 					   $"  - tag1{Environment.NewLine}" +
@@ -145,7 +149,7 @@ public class NameStandardizerTests
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -167,14 +171,14 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNaming_HandlesPrefixesAndSuffixes()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"post_title: Test Title{Environment.NewLine}" + // Should be standardized to "title"
 					   $"author_name: Test Author{Environment.NewLine}" + // Should be standardized to "author"
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 
 		// Assert
@@ -189,14 +193,14 @@ public class NameStandardizerTests
 	public void CombineFrontmatter_WithStandardNamingAndSorting_StandardizesAndSorts()
 	{
 		// Arrange
-		string input = $"---{Environment.NewLine}" +
+		var input = $"---{Environment.NewLine}" +
 					   $"writer: Test Author{Environment.NewLine}" +   // Should be standardized to "author" and sorted
 					   $"headline: Test Title{Environment.NewLine}" +  // Should be standardized to "title" and sorted
 					   $"---{Environment.NewLine}" +
 					   $"Content";
 
 		// Act
-		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard, FrontmatterOrder.Sorted);
+		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard, FrontmatterOrder.Sorted);
 
 		// Assert - verify the order in the serialized YAML by checking the raw string
 		Assert.IsTrue(result.IndexOf("title:") < result.IndexOf("author:"),

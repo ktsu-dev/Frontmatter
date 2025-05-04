@@ -1,3 +1,7 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
 namespace ktsu.Frontmatter;
 
 using HashDepot;
@@ -25,7 +29,7 @@ internal static class HashUtil
 	internal static uint ComputeHash(string content)
 	{
 		// FNV-1a is chosen for its efficiency, good distribution, and low collision rate for typical content
-		byte[] contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
+		var contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
 		return Fnv1a.Hash32(contentBytes);
 	}
 
@@ -42,16 +46,16 @@ internal static class HashUtil
 		}
 
 		// Start with the basis value for FNV-1a
-		uint result = Fnv1aOffsetBasis;
+		var result = Fnv1aOffsetBasis;
 
 		// Combine using FNV-1a algorithm multiplication and XOR
-		foreach (uint hash in hashes)
+		foreach (var hash in hashes)
 		{
 			// Convert hash to bytes
-			byte[] bytes = BitConverter.GetBytes(hash);
+			var bytes = BitConverter.GetBytes(hash);
 
 			// Apply FNV-1a to each byte
-			foreach (byte b in bytes)
+			foreach (var b in bytes)
 			{
 				result = (result * Fnv1aPrime) ^ b;
 			}
@@ -68,7 +72,7 @@ internal static class HashUtil
 	/// <returns>A combined cache key.</returns>
 	internal static uint CreateCacheKey(string content, params uint[] options)
 	{
-		uint contentHash = ComputeHash(content);
+		var contentHash = ComputeHash(content);
 		return CombineHashes([contentHash, .. options]);
 	}
 }
