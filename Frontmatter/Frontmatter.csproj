@@ -2,8 +2,8 @@
 
   <ItemGroup>
     <PackageReference Include="HashDepot" Version="3.1.0" />
-    <PackageReference Include="ktsu.Extensions" Version="1.5.2" />
-    <PackageReference Include="ktsu.FuzzySearch" Version="1.2.0" />
+    <PackageReference Include="ktsu.Extensions" Version="1.5.3" />
+    <PackageReference Include="ktsu.FuzzySearch" Version="1.2.1" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
