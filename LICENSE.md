@@ -1,6 +1,6 @@
 MIT License
 
-https://github.com/ktsu-dev/ktsu-dev/Frontmatter
+https://github.com/ktsu-dev/Frontmatter
 
 Copyright (c) 2023-2025 ktsu-dev
 
