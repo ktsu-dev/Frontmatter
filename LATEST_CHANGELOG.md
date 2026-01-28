@@ -13,6 +13,7 @@ Changes since v1.2.0:
 - Refactor NameStandardizer and PropertyMerger for improved property mapping ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update project configuration and scripts for improved build processes ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update configuration files and scripts for improved build and test processes ([@matt-edmondson](https://github.com/matt-edmondson))
+- Migrate to dotnet 10 ([@matt-edmondson](https://github.com/matt-edmondson))
 - Refactor Frontmatter extraction and standardization logic ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add isolation tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
 - Enhance Frontmatter validation and refactor PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
