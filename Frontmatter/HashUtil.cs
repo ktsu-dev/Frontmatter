@@ -29,7 +29,7 @@ internal static class HashUtil
 	internal static uint ComputeHash(string content)
 	{
 		// FNV-1a is chosen for its efficiency, good distribution, and low collision rate for typical content
-		var contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
+		byte[] contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
 		return Fnv1a.Hash32(contentBytes);
 	}
 
@@ -46,16 +46,16 @@ internal static class HashUtil
 		}
 
 		// Start with the basis value for FNV-1a
-		var result = Fnv1aOffsetBasis;
+		uint result = Fnv1aOffsetBasis;
 
 		// Combine using FNV-1a algorithm multiplication and XOR
-		foreach (var hash in hashes)
+		foreach (uint hash in hashes)
 		{
 			// Convert hash to bytes
-			var bytes = BitConverter.GetBytes(hash);
+			byte[] bytes = BitConverter.GetBytes(hash);
 
 			// Apply FNV-1a to each byte
-			foreach (var b in bytes)
+			foreach (byte b in bytes)
 			{
 				result = (result * Fnv1aPrime) ^ b;
 			}
@@ -72,7 +72,7 @@ internal static class HashUtil
 	/// <returns>A combined cache key.</returns>
 	internal static uint CreateCacheKey(string content, params uint[] options)
 	{
-		var contentHash = ComputeHash(content);
+		uint contentHash = ComputeHash(content);
 		return CombineHashes([contentHash, .. options]);
 	}
 }

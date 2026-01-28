@@ -13,7 +13,7 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithMultipleFrontmatterSections_CombinesSections()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"title: First Title{Environment.NewLine}" +
 					  $"---{Environment.NewLine}" +
 					  $"Some content between frontmatter{Environment.NewLine}" +
@@ -23,16 +23,16 @@ public class CombineFrontmatterTests
 					  $"Final content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input);
+		string result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert - at minimum, the resulting document should have frontmatter and content
 		Assert.IsTrue(Frontmatter.HasFrontmatter(result), "The result should have frontmatter");
 
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter, "Extracted frontmatter should not be null");
 
 		// The body should contain at least one of the original content sections
-		var body = Frontmatter.ExtractBody(result);
+		string body = Frontmatter.ExtractBody(result);
 		Assert.IsFalse(string.IsNullOrWhiteSpace(body), "The body should not be empty");
 	}
 
@@ -40,7 +40,7 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithConflictingProperties_UsesFirstProperty()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"title: First Title{Environment.NewLine}" +
 					  $"---{Environment.NewLine}" +
 					  $"Some content{Environment.NewLine}" +
@@ -50,10 +50,10 @@ public class CombineFrontmatterTests
 					  $"Final content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input);
+		string result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("First Title", extractedFrontmatter["title"]);
 	}
@@ -62,10 +62,10 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithNoFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		var input = "Just content without frontmatter";
+		string input = "Just content without frontmatter";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input);
+		string result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -75,71 +75,71 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithCustomOrder_PreservesOrder()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"author: Test Author{Environment.NewLine}" +
 					  $"title: Test Title{Environment.NewLine}" +
 					  $"---{Environment.NewLine}" +
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs);
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs);
 
 		// Assert
 		// Extract the frontmatter to check the actual content
-		var frontmatterSection = result.Substring(result.IndexOf("---") + 3,
+		string frontmatterSection = result.Substring(result.IndexOf("---") + 3,
 			result.IndexOf("---", result.IndexOf("---") + 3) - result.IndexOf("---") - 3).Trim();
 
 		// Check if author appears before title
-		var authorIndex = frontmatterSection.IndexOf("author:");
-		var titleIndex = frontmatterSection.IndexOf("title:");
-		Assert.IsTrue(authorIndex < titleIndex);
+		int authorIndex = frontmatterSection.IndexOf("author:");
+		int titleIndex = frontmatterSection.IndexOf("title:");
+		Assert.IsLessThan(titleIndex, authorIndex, "Author should appear before title when preserving original order");
 	}
 
 	[TestMethod]
 	public void CombineFrontmatter_WithStandardOrder_SortsProperties()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"author: Test Author{Environment.NewLine}" +
 					  $"title: Test Title{Environment.NewLine}" +
 					  $"---{Environment.NewLine}" +
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.Sorted);
 
 		// Assert
 		// Extract the frontmatter to check the actual content
-		var frontmatterSection = result.Substring(result.IndexOf("---") + 3,
+		string frontmatterSection = result.Substring(result.IndexOf("---") + 3,
 			result.IndexOf("---", result.IndexOf("---") + 3) - result.IndexOf("---") - 3).Trim();
 
 		// Check if title appears before author (as per standard order)
-		var authorIndex = frontmatterSection.IndexOf("author:");
-		var titleIndex = frontmatterSection.IndexOf("title:");
-		Assert.IsTrue(titleIndex < authorIndex);
+		int authorIndex = frontmatterSection.IndexOf("author:");
+		int titleIndex = frontmatterSection.IndexOf("title:");
+		Assert.IsLessThan(authorIndex, titleIndex, "Title should appear before author in standard sorted order");
 	}
 
 	[TestMethod]
 	public void CombineFrontmatter_WithStandardNaming_StandardizesPropertyNames()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"writer: Test Author{Environment.NewLine}" + // Might be standardized to "author"
 					  $"heading: Test Title{Environment.NewLine}" + // Might be standardized to "title"
 					  $"---{Environment.NewLine}" +
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 
 		// Assert
 		Assert.IsTrue(Frontmatter.HasFrontmatter(result), "Result should contain frontmatter");
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter, "Frontmatter should be extracted");
-		Assert.IsTrue(extractedFrontmatter.Count > 0, "Frontmatter should have at least one key");
+		Assert.IsNotEmpty(extractedFrontmatter, "Frontmatter should have at least one key");
 
 		// The content should be preserved
-		var body = Frontmatter.ExtractBody(result);
+		string body = Frontmatter.ExtractBody(result);
 		Assert.AreEqual("Content", body, "Body content should be preserved");
 	}
 
@@ -147,20 +147,20 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithConservativeMergeStrategy_MergesKnownProperties()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"title: Test Title{Environment.NewLine}" +
 					  $"name: Another Title{Environment.NewLine}" + // Should be merged with "title" in conservative strategy
 					  $"---{Environment.NewLine}" +
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
-		Assert.AreEqual(1, extractedFrontmatter.Count); // Only one property after merging
-		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
+		Assert.HasCount(1, extractedFrontmatter); // Only one property after merging
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"), "Merged frontmatter should contain 'title' after conservative merge");
 		Assert.AreEqual("Test Title", extractedFrontmatter["title"]);
 	}
 
@@ -168,27 +168,27 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithAggressiveMergeStrategy_MergesSimilarProperties()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"title: Test Title{Environment.NewLine}" +
 					  $"custom_title: Another Title{Environment.NewLine}" + // Should be merged with pattern matching
 					  $"---{Environment.NewLine}" +
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Aggressive);
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Aggressive);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 
 		// Either keys should be merged or both keys preserved
-		var keyCount = extractedFrontmatter.Count;
-		Assert.IsTrue(keyCount > 0, "At least one key should be present in the result");
+		int keyCount = extractedFrontmatter.Count;
+		Assert.IsGreaterThan(0, keyCount, "At least one key should be present in the result");
 
 		// Check that we have the expected values regardless of merging strategy
-		var foundTestTitle = false;
+		bool foundTestTitle = false;
 
-		foreach (var value in extractedFrontmatter.Values)
+		foreach (object value in extractedFrontmatter.Values)
 		{
 			if (value.ToString() == "Test Title")
 			{
@@ -203,28 +203,28 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithNoMergeStrategy_PreservesAllProperties()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"title: Test Title{Environment.NewLine}" +
 					  $"name: Another Title{Environment.NewLine}" + // Should not be merged with "title"
 					  $"---{Environment.NewLine}" +
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.None);
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.None);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
-		Assert.AreEqual(2, extractedFrontmatter.Count); // Both properties preserved
-		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"));
-		Assert.IsTrue(extractedFrontmatter.ContainsKey("name"));
+		Assert.HasCount(2, extractedFrontmatter); // Both properties preserved
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("title"), "Frontmatter should contain 'title' when merge strategy is None");
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("name"), "Frontmatter should contain 'name' when merge strategy is None");
 	}
 
 	[TestMethod]
 	public void CombineFrontmatter_WithComplexPropertyValues_PreservesStructure()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					  $"title: Test Title{Environment.NewLine}" +
 					  $"tags:{Environment.NewLine}" +
 					  $"  - tag1{Environment.NewLine}" +
@@ -233,15 +233,15 @@ public class CombineFrontmatterTests
 					  $"Content";
 
 		// Act
-		var result = Frontmatter.CombineFrontmatter(input);
+		string result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
-		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"));
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"), "Frontmatter should contain 'tags' property with complex list value");
 		Assert.IsInstanceOfType<System.Collections.IList>(extractedFrontmatter["tags"]);
-		var tags = (System.Collections.IList)extractedFrontmatter["tags"];
-		Assert.AreEqual(2, tags.Count);
+		System.Collections.IList tags = (System.Collections.IList)extractedFrontmatter["tags"];
+		Assert.HasCount(2, tags);
 		Assert.AreEqual("tag1", tags[0]);
 		Assert.AreEqual("tag2", tags[1]);
 	}

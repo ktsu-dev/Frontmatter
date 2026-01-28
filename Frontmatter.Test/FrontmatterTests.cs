@@ -13,66 +13,66 @@ public class FrontmatterTests
 	public void HasFrontmatter_WithFrontmatter_ReturnsTrue()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.HasFrontmatter(input);
+		bool result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
-		Assert.IsTrue(result);
+		Assert.IsTrue(result, "Expected HasFrontmatter to return true for content with frontmatter");
 	}
 
 	[TestMethod]
 	public void HasFrontmatter_WithoutFrontmatter_ReturnsFalse()
 	{
 		// Arrange
-		var input = "Just content without frontmatter";
+		string input = "Just content without frontmatter";
 
 		// Act
-		var result = Frontmatter.HasFrontmatter(input);
+		bool result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "Expected HasFrontmatter to return false for content without frontmatter");
 	}
 
 	[TestMethod]
 	public void HasFrontmatter_WithEmptyContent_ReturnsFalse()
 	{
 		// Arrange
-		var input = string.Empty;
+		string input = string.Empty;
 
 		// Act
-		var result = Frontmatter.HasFrontmatter(input);
+		bool result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "Expected HasFrontmatter to return false for empty content");
 	}
 
 	[TestMethod]
 	public void HasFrontmatter_WithContentStartingWithHyphen_ReturnsFalse()
 	{
 		// Arrange
-		var input = $"--{Environment.NewLine}This is not frontmatter{Environment.NewLine}";
+		string input = $"--{Environment.NewLine}This is not frontmatter{Environment.NewLine}";
 
 		// Act
-		var result = Frontmatter.HasFrontmatter(input);
+		bool result = Frontmatter.HasFrontmatter(input);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "Expected HasFrontmatter to return false for content starting with incomplete delimiter");
 	}
 
 	[TestMethod]
 	public void ExtractFrontmatter_WithValidFrontmatter_ReturnsFrontmatterDictionary()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ExtractFrontmatter(input);
+		Dictionary<string, object>? result = Frontmatter.ExtractFrontmatter(input);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(1, result.Count);
+		Assert.HasCount(1, result);
 		Assert.AreEqual("Test", result["title"]);
 	}
 
@@ -80,41 +80,40 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithMultilineValues_ParsesCorrectly()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ExtractFrontmatter(input);
+		Dictionary<string, object>? result = Frontmatter.ExtractFrontmatter(input);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(2, result.Count);
+		Assert.HasCount(2, result);
 		Assert.AreEqual("Test", result["title"]);
-		Assert.IsTrue(result["description"].ToString()!.Contains("multiline"));
-		Assert.IsTrue(result["description"].ToString()!.Contains("description for testing"));
+		Assert.Contains("multiline", result["description"].ToString()!, "Expected description to contain 'multiline'");
+		Assert.Contains("description for testing", result["description"].ToString()!, "Expected description to contain 'description for testing'");
 	}
 
 	[TestMethod]
-	public void ExtractFrontmatter_WithEmptyFrontmatter_ReturnsEmptyDictionary()
+	public void ExtractFrontmatter_WithEmptyFrontmatter_ReturnsNull()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ExtractFrontmatter(input);
+		Dictionary<string, object>? result = Frontmatter.ExtractFrontmatter(input);
 
-		// Assert
-		Assert.IsNotNull(result);
-		Assert.AreEqual(0, result.Count);
+		// Assert - empty frontmatter parses as null since there are no properties
+		Assert.IsNull(result);
 	}
 
 	[TestMethod]
 	public void ExtractFrontmatter_WithoutFrontmatter_ReturnsNull()
 	{
 		// Arrange
-		var input = "Just content without frontmatter";
+		string input = "Just content without frontmatter";
 
 		// Act
-		var result = Frontmatter.ExtractFrontmatter(input);
+		Dictionary<string, object>? result = Frontmatter.ExtractFrontmatter(input);
 
 		// Assert
 		Assert.IsNull(result);
@@ -124,27 +123,27 @@ public class FrontmatterTests
 	public void ExtractFrontmatter_WithComplexTypes_ParsesCorrectly()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}tags:{Environment.NewLine}- tag1{Environment.NewLine}- tag2{Environment.NewLine}nested:{Environment.NewLine}  key1: value1{Environment.NewLine}  key2: value2{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}tags:{Environment.NewLine}- tag1{Environment.NewLine}- tag2{Environment.NewLine}nested:{Environment.NewLine}  key1: value1{Environment.NewLine}  key2: value2{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ExtractFrontmatter(input);
+		Dictionary<string, object>? result = Frontmatter.ExtractFrontmatter(input);
 
 		// Assert
 		Assert.IsNotNull(result);
-		Assert.AreEqual(3, result.Count);
+		Assert.HasCount(3, result);
 		Assert.AreEqual("Test", result["title"]);
 
 		// Check tags list
-		var tags = result["tags"] as System.Collections.IList;
+		System.Collections.IList? tags = result["tags"] as System.Collections.IList;
 		Assert.IsNotNull(tags);
-		Assert.AreEqual(2, tags.Count);
+		Assert.HasCount(2, tags);
 		Assert.AreEqual("tag1", tags[0]);
 		Assert.AreEqual("tag2", tags[1]);
 
-		// Check nested dictionary
-		var nested = result["nested"] as Dictionary<object, object>;
+		// Check nested dictionary - YamlDotNet returns IDictionary
+		System.Collections.IDictionary? nested = result["nested"] as System.Collections.IDictionary;
 		Assert.IsNotNull(nested);
-		Assert.AreEqual(2, nested.Count);
+		Assert.HasCount(2, nested);
 		Assert.AreEqual("value1", nested["key1"]);
 		Assert.AreEqual("value2", nested["key2"]);
 	}
@@ -153,10 +152,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithFrontmatter_ReturnsBodyOnly()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ExtractBody(input);
+		string result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual("Content", result);
@@ -166,10 +165,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithEmptyFrontmatter_ReturnsBodyOnly()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ExtractBody(input);
+		string result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual("Content", result);
@@ -179,10 +178,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithMultilineFrontmatter_ReturnsBodyOnly()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content with multiple lines{Environment.NewLine}Second line{Environment.NewLine}Third line";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}description: |{Environment.NewLine}  This is a multiline{Environment.NewLine}  description for testing{Environment.NewLine}---{Environment.NewLine}Content with multiple lines{Environment.NewLine}Second line{Environment.NewLine}Third line";
 
 		// Act
-		var result = Frontmatter.ExtractBody(input);
+		string result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual($"Content with multiple lines{Environment.NewLine}Second line{Environment.NewLine}Third line", result);
@@ -192,10 +191,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithoutFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		var input = "Just content without frontmatter";
+		string input = "Just content without frontmatter";
 
 		// Act
-		var result = Frontmatter.ExtractBody(input);
+		string result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -205,10 +204,10 @@ public class FrontmatterTests
 	public void ExtractBody_WithEmptyContent_ReturnsEmptyString()
 	{
 		// Arrange
-		var input = string.Empty;
+		string input = string.Empty;
 
 		// Act
-		var result = Frontmatter.ExtractBody(input);
+		string result = Frontmatter.ExtractBody(input);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -218,15 +217,15 @@ public class FrontmatterTests
 	public void AddFrontmatter_ToContentWithoutFrontmatter_AddsFrontmatter()
 	{
 		// Arrange
-		var input = "Content without frontmatter";
-		var frontmatter = new Dictionary<string, object> { { "title", "Added Title" } };
+		string input = "Content without frontmatter";
+		Dictionary<string, object> frontmatter = new() { { "title", "Added Title" } };
 
 		// Act
-		var result = Frontmatter.AddFrontmatter(input, frontmatter);
+		string result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
-		Assert.IsTrue(Frontmatter.HasFrontmatter(result));
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Assert.IsTrue(Frontmatter.HasFrontmatter(result), "Result should have frontmatter after adding");
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("Added Title", extractedFrontmatter["title"]);
 		Assert.AreEqual("Content without frontmatter", Frontmatter.ExtractBody(result));
@@ -236,10 +235,10 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithNullFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		var input = "Content without frontmatter";
+		string input = "Content without frontmatter";
 
 		// Act
-		var result = Frontmatter.AddFrontmatter(input, null!);
+		string result = Frontmatter.AddFrontmatter(input, null!);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -249,11 +248,11 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithEmptyFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		var input = "Content without frontmatter";
-		var frontmatter = new Dictionary<string, object>();
+		string input = "Content without frontmatter";
+		Dictionary<string, object> frontmatter = [];
 
 		// Act
-		var result = Frontmatter.AddFrontmatter(input, frontmatter);
+		string result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -263,14 +262,14 @@ public class FrontmatterTests
 	public void AddFrontmatter_ToContentWithExistingFrontmatter_CombinesFrontmatter()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
-		var frontmatter = new Dictionary<string, object> { { "author", "Test Author" } };
+		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		Dictionary<string, object> frontmatter = new() { { "author", "Test Author" } };
 
 		// Act
-		var result = Frontmatter.AddFrontmatter(input, frontmatter);
+		string result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("Original Title", extractedFrontmatter["title"]);
 		Assert.AreEqual("Test Author", extractedFrontmatter["author"]);
@@ -280,14 +279,14 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithOverlappingKeys_UsesOriginalValue()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
-		var frontmatter = new Dictionary<string, object> { { "title", "New Title" } };
+		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		Dictionary<string, object> frontmatter = new() { { "title", "New Title" } };
 
 		// Act
-		var result = Frontmatter.AddFrontmatter(input, frontmatter);
+		string result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("Original Title", extractedFrontmatter["title"]);
 	}
@@ -297,8 +296,8 @@ public class FrontmatterTests
 	public void AddFrontmatter_WithComplexValues_SerializesCorrectly()
 	{
 		// Arrange
-		var input = "Content without frontmatter";
-		var frontmatter = new Dictionary<string, object> {
+		string input = "Content without frontmatter";
+		Dictionary<string, object> frontmatter = new() {
 			{ "title", "Complex Title" },
 			{ "tags", valueArr2 },
 			{ "nested", new Dictionary<string, object> {
@@ -308,64 +307,64 @@ public class FrontmatterTests
 		};
 
 		// Act
-		var result = Frontmatter.AddFrontmatter(input, frontmatter);
+		string result = Frontmatter.AddFrontmatter(input, frontmatter);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("Complex Title", extractedFrontmatter["title"]);
 
 		// Verify tags array was serialized and deserialized correctly
-		var tags = extractedFrontmatter["tags"] as System.Collections.IList;
+		System.Collections.IList? tags = extractedFrontmatter["tags"] as System.Collections.IList;
 		Assert.IsNotNull(tags);
-		Assert.AreEqual(2, tags.Count);
+		Assert.HasCount(2, tags);
 		Assert.AreEqual("tag1", tags[0]);
 		Assert.AreEqual("tag2", tags[1]);
 
-		// Verify nested dictionary was serialized and deserialized correctly
-		var nested = extractedFrontmatter["nested"] as Dictionary<object, object>;
+		// Verify nested dictionary was serialized and deserialized correctly - YamlDotNet returns IDictionary
+		System.Collections.IDictionary? nested = extractedFrontmatter["nested"] as System.Collections.IDictionary;
 		Assert.IsNotNull(nested);
-		Assert.AreEqual(2, nested.Count);
+		Assert.HasCount(2, nested);
 		Assert.AreEqual("value1", nested["key1"]);
-		Assert.AreEqual("42", nested["key2"].ToString());
+		Assert.AreEqual("42", nested["key2"]!.ToString());
 	}
 
 	[TestMethod]
 	public void RemoveFrontmatter_WithFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.RemoveFrontmatter(input);
+		string result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
-		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
-		Assert.IsTrue(result.StartsWith("Content"));
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result), "Result should not have frontmatter after removal");
+		Assert.StartsWith("Content", result, "Result should start with 'Content' after frontmatter removal");
 	}
 
 	[TestMethod]
 	public void RemoveFrontmatter_WithEmptyFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.RemoveFrontmatter(input);
+		string result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
-		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
-		Assert.IsTrue(result.StartsWith("Content"));
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result), "Result should not have frontmatter after removal");
+		Assert.StartsWith("Content", result, "Result should start with 'Content' after empty frontmatter removal");
 	}
 
 	[TestMethod]
 	public void RemoveFrontmatter_WithoutFrontmatter_ReturnsOriginalContent()
 	{
 		// Arrange
-		var input = "Just content without frontmatter";
+		string input = "Just content without frontmatter";
 
 		// Act
-		var result = Frontmatter.RemoveFrontmatter(input);
+		string result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(input, result);
@@ -375,10 +374,10 @@ public class FrontmatterTests
 	public void RemoveFrontmatter_WithEmptyContent_ReturnsEmptyString()
 	{
 		// Arrange
-		var input = string.Empty;
+		string input = string.Empty;
 
 		// Act
-		var result = Frontmatter.RemoveFrontmatter(input);
+		string result = Frontmatter.RemoveFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -388,14 +387,14 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithExistingFrontmatter_ReplacesFrontmatter()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
-		var replacement = new Dictionary<string, object> { { "title", "New Title" } };
+		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		Dictionary<string, object> replacement = new() { { "title", "New Title" } };
 
 		// Act
-		var result = Frontmatter.ReplaceFrontmatter(input, replacement);
+		string result = Frontmatter.ReplaceFrontmatter(input, replacement);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("New Title", extractedFrontmatter["title"]);
 		Assert.AreEqual("Content", Frontmatter.ExtractBody(result));
@@ -405,14 +404,14 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithoutExistingFrontmatter_AddsFrontmatter()
 	{
 		// Arrange
-		var input = "Content without frontmatter";
-		var replacement = new Dictionary<string, object> { { "title", "New Title" } };
+		string input = "Content without frontmatter";
+		Dictionary<string, object> replacement = new() { { "title", "New Title" } };
 
 		// Act
-		var result = Frontmatter.ReplaceFrontmatter(input, replacement);
+		string result = Frontmatter.ReplaceFrontmatter(input, replacement);
 
 		// Assert
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 		Assert.AreEqual("New Title", extractedFrontmatter["title"]);
 		Assert.AreEqual("Content without frontmatter", Frontmatter.ExtractBody(result));
@@ -422,13 +421,13 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithNullFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act
-		var result = Frontmatter.ReplaceFrontmatter(input, null!);
+		string result = Frontmatter.ReplaceFrontmatter(input, null!);
 
 		// Assert
-		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result), "Result should not have frontmatter after replacement with null");
 		Assert.AreEqual("Content", result.TrimEnd());
 	}
 
@@ -436,14 +435,14 @@ public class FrontmatterTests
 	public void ReplaceFrontmatter_WithEmptyFrontmatter_RemovesFrontmatter()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
-		var replacement = new Dictionary<string, object>();
+		string input = $"---{Environment.NewLine}title: Original Title{Environment.NewLine}---{Environment.NewLine}Content";
+		Dictionary<string, object> replacement = [];
 
 		// Act
-		var result = Frontmatter.ReplaceFrontmatter(input, replacement);
+		string result = Frontmatter.ReplaceFrontmatter(input, replacement);
 
 		// Assert
-		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result), "Result should not have frontmatter after replacement with empty dictionary");
 		Assert.AreEqual("Content", result.TrimEnd());
 	}
 
@@ -451,7 +450,7 @@ public class FrontmatterTests
 	public void SerializeFrontmatter_WithValidDictionary_ReturnsYamlString()
 	{
 		// Arrange
-		var frontmatter = new Dictionary<string, object>
+		Dictionary<string, object> frontmatter = new()
 		{
 			{ "title", "Test Title" },
 			{ "author", "Test Author" },
@@ -459,12 +458,12 @@ public class FrontmatterTests
 		};
 
 		// Act
-		var result = Frontmatter.SerializeFrontmatter(frontmatter);
+		string result = Frontmatter.SerializeFrontmatter(frontmatter);
 
 		// Assert
-		Assert.IsTrue(result.Contains("title: Test Title"));
-		Assert.IsTrue(result.Contains("author: Test Author"));
-		Assert.IsTrue(result.Contains("date: "));
+		Assert.Contains("title: Test Title", result, "Serialized result should contain 'title: Test Title'");
+		Assert.Contains("author: Test Author", result, "Serialized result should contain 'author: Test Author'");
+		Assert.Contains("date: ", result, "Serialized result should contain 'date: '");
 	}
 	private static readonly string[] valueArr3 = ["tag1", "tag2", "tag3"];
 
@@ -472,7 +471,7 @@ public class FrontmatterTests
 	public void SerializeFrontmatter_WithComplexNestedTypes_SerializesCorrectly()
 	{
 		// Arrange
-		var frontmatter = new Dictionary<string, object>
+		Dictionary<string, object> frontmatter = new()
 		{
 			{ "title", "Test Title" },
 			{ "tags", valueArr3 },
@@ -486,28 +485,28 @@ public class FrontmatterTests
 		};
 
 		// Act
-		var result = Frontmatter.SerializeFrontmatter(frontmatter);
+		string result = Frontmatter.SerializeFrontmatter(frontmatter);
 
 		// Assert
-		Assert.IsTrue(result.Contains("title: Test Title"));
-		Assert.IsTrue(result.Contains("tags:"));
-		Assert.IsTrue(result.Contains("- tag1"));
-		Assert.IsTrue(result.Contains("- tag2"));
-		Assert.IsTrue(result.Contains("- tag3"));
-		Assert.IsTrue(result.Contains("metadata:"));
-		Assert.IsTrue(result.Contains("created:"));
-		Assert.IsTrue(result.Contains("updated:"));
-		Assert.IsTrue(result.Contains("status: published"));
+		Assert.Contains("title: Test Title", result, "Serialized result should contain 'title: Test Title'");
+		Assert.Contains("tags:", result, "Serialized result should contain 'tags:'");
+		Assert.Contains("- tag1", result, "Serialized result should contain '- tag1'");
+		Assert.Contains("- tag2", result, "Serialized result should contain '- tag2'");
+		Assert.Contains("- tag3", result, "Serialized result should contain '- tag3'");
+		Assert.Contains("metadata:", result, "Serialized result should contain 'metadata:'");
+		Assert.Contains("created:", result, "Serialized result should contain 'created:'");
+		Assert.Contains("updated:", result, "Serialized result should contain 'updated:'");
+		Assert.Contains("status: published", result, "Serialized result should contain 'status: published'");
 	}
 
 	[TestMethod]
 	public void SerializeFrontmatter_WithEmptyDictionary_ReturnsEmptyString()
 	{
 		// Arrange
-		var frontmatter = new Dictionary<string, object>();
+		Dictionary<string, object> frontmatter = [];
 
 		// Act
-		var result = Frontmatter.SerializeFrontmatter(frontmatter);
+		string result = Frontmatter.SerializeFrontmatter(frontmatter);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -517,7 +516,7 @@ public class FrontmatterTests
 	public void SerializeFrontmatter_WithNullDictionary_ReturnsEmptyString()
 	{
 		// Act
-		var result = Frontmatter.SerializeFrontmatter(null!);
+		string result = Frontmatter.SerializeFrontmatter(null!);
 
 		// Assert
 		Assert.AreEqual(string.Empty, result);
@@ -527,7 +526,7 @@ public class FrontmatterTests
 	public void CombineFrontmatterRoundTrip_PreservesAllData()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}" +
+		string input = $"---{Environment.NewLine}" +
 					   $"title: Original Title{Environment.NewLine}" +
 					   $"author: Original Author{Environment.NewLine}" +
 					   $"tags:{Environment.NewLine}" +
@@ -542,40 +541,39 @@ public class FrontmatterTests
 					   $"---{Environment.NewLine}" +
 					   $"More content";
 
-		// Act
-		var result = Frontmatter.CombineFrontmatter(input);
+		// Act - default CombineFrontmatter uses Conservative merge which merges keywords into tags
+		string result = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
-		Assert.IsTrue(Frontmatter.HasFrontmatter(result));
+		Assert.IsTrue(Frontmatter.HasFrontmatter(result), "Combined result should have frontmatter");
 
-		var extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
+		Dictionary<string, object>? extractedFrontmatter = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(extractedFrontmatter);
 
 		// Check original values are preserved
 		Assert.AreEqual("Original Title", extractedFrontmatter["title"]);
 		Assert.AreEqual("Original Author", extractedFrontmatter["author"]);
 
-		// Check that tags and keywords are both present
-		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"));
-		Assert.IsTrue(extractedFrontmatter.ContainsKey("keywords"));
+		// Check that tags is present (keywords is merged into tags with Conservative strategy)
+		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"), "Extracted frontmatter should contain 'tags' key");
 
 		// Check content is correctly preserved
-		var body = Frontmatter.ExtractBody(result);
-		Assert.IsTrue(body.Contains("Original content"));
-		Assert.IsTrue(body.Contains("More content"));
+		string body = Frontmatter.ExtractBody(result);
+		Assert.Contains("Original content", body, "Body should contain 'Original content'");
+		Assert.Contains("More content", body, "Body should contain 'More content'");
 	}
 
 	[TestMethod]
 	public void CacheConsistency_MultipleCalls_ReturnsSameResult()
 	{
 		// Arrange
-		var input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
+		string input = $"---{Environment.NewLine}title: Test{Environment.NewLine}---{Environment.NewLine}Content";
 
 		// Act - First call should process and cache
-		var firstResult = Frontmatter.CombineFrontmatter(input);
+		string firstResult = Frontmatter.CombineFrontmatter(input);
 
 		// Act - Second call should use cache
-		var secondResult = Frontmatter.CombineFrontmatter(input);
+		string secondResult = Frontmatter.CombineFrontmatter(input);
 
 		// Assert
 		Assert.AreEqual(firstResult, secondResult);

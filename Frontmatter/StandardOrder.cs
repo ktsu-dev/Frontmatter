@@ -210,8 +210,8 @@ public static class StandardOrder
 	/// </returns>
 	public static int Compare(string a, string b)
 	{
-		ArgumentNullException.ThrowIfNull(a);
-		ArgumentNullException.ThrowIfNull(b);
+		Ensure.NotNull(a);
+		Ensure.NotNull(b);
 
 		if (a == b)
 		{
@@ -219,8 +219,8 @@ public static class StandardOrder
 		}
 
 		// Get the indices from the standard property list
-		var indexA = Array.IndexOf(PropertyNames, a.ToLowerInvariant());
-		var indexB = Array.IndexOf(PropertyNames, b.ToLowerInvariant());
+		int indexA = Array.IndexOf(PropertyNames, a.ToLowerInvariant());
+		int indexB = Array.IndexOf(PropertyNames, b.ToLowerInvariant());
 
 		// If both properties are not in the standard list, sort them alphabetically
 		if (indexA < 0 && indexB < 0)

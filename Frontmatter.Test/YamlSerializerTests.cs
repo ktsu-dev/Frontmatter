@@ -13,15 +13,15 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithValidYaml_ReturnsTrue()
 	{
 		// Arrange
-		var yamlContent = "title: Test Title\nauthor: Test Author";
+		string yamlContent = "title: Test Title\nauthor: Test Author";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsTrue(result);
+		Assert.IsTrue(result, "TryParseYamlObject should return true for valid YAML");
 		Assert.IsNotNull(parsedObject);
-		Assert.AreEqual(2, parsedObject.Count);
+		Assert.HasCount(2, parsedObject);
 		Assert.AreEqual("Test Title", parsedObject["title"]);
 		Assert.AreEqual("Test Author", parsedObject["author"]);
 	}
@@ -30,13 +30,13 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithInvalidYaml_ReturnsFalse()
 	{
 		// Arrange
-		var yamlContent = "title: Test Title\nauthor: \n  invalidindent\n  : broken: syntax";
+		string yamlContent = "title: Test Title\nauthor: \n  invalidindent\n  : broken: syntax";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "TryParseYamlObject should return false for invalid YAML");
 		Assert.IsNull(parsedObject);
 	}
 
@@ -44,13 +44,13 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithEmptyString_ReturnsFalse()
 	{
 		// Arrange
-		var yamlContent = "";
+		string yamlContent = "";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "TryParseYamlObject should return false for empty string");
 		Assert.IsNull(parsedObject);
 	}
 
@@ -58,13 +58,13 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithWhitespaceOnly_ReturnsFalse()
 	{
 		// Arrange
-		var yamlContent = "   \n  \t  ";
+		string yamlContent = "   \n  \t  ";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "TryParseYamlObject should return false for whitespace-only input");
 		Assert.IsNull(parsedObject);
 	}
 
@@ -72,13 +72,13 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithNonDictionaryYaml_ReturnsFalse()
 	{
 		// Arrange - a YAML array instead of a dictionary
-		var yamlContent = "- item1\n- item2\n- item3";
+		string yamlContent = "- item1\n- item2\n- item3";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsFalse(result);
+		Assert.IsFalse(result, "TryParseYamlObject should return false for non-dictionary YAML");
 		Assert.IsNull(parsedObject);
 	}
 
@@ -86,15 +86,15 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithSpecialCharacters_ParsesCorrectly()
 	{
 		// Arrange
-		var yamlContent = "title: \"Title with: colon\"\nauthor: 'Name with ''quotes'''\nsymbols: \"$%^&*()\"";
+		string yamlContent = "title: \"Title with: colon\"\nauthor: 'Name with ''quotes'''\nsymbols: \"$%^&*()\"";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsTrue(result);
+		Assert.IsTrue(result, "TryParseYamlObject should return true for YAML with special characters");
 		Assert.IsNotNull(parsedObject);
-		Assert.AreEqual(3, parsedObject.Count);
+		Assert.HasCount(3, parsedObject);
 		Assert.AreEqual("Title with: colon", parsedObject["title"]);
 		Assert.AreEqual("Name with 'quotes'", parsedObject["author"]);
 		Assert.AreEqual("$%^&*()", parsedObject["symbols"]);
@@ -104,93 +104,94 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithMultilineStrings_ParsesCorrectly()
 	{
 		// Arrange
-		var yamlContent = "title: Test Title\ndescription: |\n  This is a multiline\n  description that spans\n  multiple lines.";
+		string yamlContent = "title: Test Title\ndescription: |\n  This is a multiline\n  description that spans\n  multiple lines.";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsTrue(result);
+		Assert.IsTrue(result, "TryParseYamlObject should return true for YAML with multiline strings");
 		Assert.IsNotNull(parsedObject);
-		Assert.AreEqual(2, parsedObject.Count);
+		Assert.HasCount(2, parsedObject);
 
-		var description = parsedObject["description"].ToString()!;
-		Assert.IsTrue(description.Contains("This is a multiline"));
-		Assert.IsTrue(description.Contains("description that spans"));
-		Assert.IsTrue(description.Contains("multiple lines."));
+		string description = parsedObject["description"].ToString()!;
+		Assert.Contains("This is a multiline", description, "Result should contain 'This is a multiline'");
+		Assert.Contains("description that spans", description, "Result should contain 'description that spans'");
+		Assert.Contains("multiple lines.", description, "Result should contain 'multiple lines.'");
 	}
 
 	[TestMethod]
 	public void TryParseYamlObject_WithFoldedMultilineStrings_ParsesCorrectly()
 	{
 		// Arrange
-		var yamlContent = "title: Test Title\ndescription: >\n  This is a folded multiline\n  description that should\n  be joined with spaces.";
+		string yamlContent = "title: Test Title\ndescription: >\n  This is a folded multiline\n  description that should\n  be joined with spaces.";
 
 		// Act
-		var result = YamlSerializer.TryParseYamlObject(yamlContent, out var parsedObject);
+		bool result = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? parsedObject);
 
 		// Assert
-		Assert.IsTrue(result);
+		Assert.IsTrue(result, "TryParseYamlObject should return true for YAML with folded multiline strings");
 		Assert.IsNotNull(parsedObject);
-		Assert.AreEqual(2, parsedObject.Count);
+		Assert.HasCount(2, parsedObject);
 
-		var description = parsedObject["description"].ToString()!;
-		Assert.IsTrue(description.Contains("This is a folded multiline description that should be joined with spaces"));
+		string description = parsedObject["description"].ToString()!;
+		Assert.Contains("This is a folded multiline description that should be joined with spaces", description, "Result should contain 'This is a folded multiline description that should be joined with spaces'");
 	}
 
 	[TestMethod]
 	public void SerializeYamlObject_WithSimpleDictionary_SerializesCorrectly()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>
+		Dictionary<string, object> dictionary = new()
 		{
 			{ "title", "Test Title" },
 			{ "author", "Test Author" }
 		};
 
 		// Act
-		var result = YamlSerializer.SerializeYamlObject(dictionary);
+		string result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
-		Assert.IsTrue(result.Contains("title: Test Title"));
-		Assert.IsTrue(result.Contains("author: Test Author"));
+		Assert.Contains("title: Test Title", result, "Result should contain 'title: Test Title'");
+		Assert.Contains("author: Test Author", result, "Result should contain 'author: Test Author'");
 	}
 
 	[TestMethod]
 	public void SerializeYamlObject_WithEmptyDictionary_ReturnsEmptyString()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>();
+		Dictionary<string, object> dictionary = [];
 
 		// Act
-		var result = YamlSerializer.SerializeYamlObject(dictionary);
+		string result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
-		Assert.IsTrue(string.IsNullOrWhiteSpace(result) || result == "{}" || result == "{}");
+		Assert.IsTrue(string.IsNullOrWhiteSpace(result) || result == "{}" || result == "{}", "Result should be empty, whitespace, or '{}'");
 	}
 
 	[TestMethod]
 	public void SerializeYamlObject_WithPropertyContainingColon_EscapesCorrectly()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>
+		Dictionary<string, object> dictionary = new()
 		{
 			{ "title", "Test: Title with colon" }
 		};
 
 		// Act
-		var result = YamlSerializer.SerializeYamlObject(dictionary);
+		string result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		// The colon should be properly escaped in the output
-		Assert.IsTrue(result.Contains("title:") && result.Contains("Test: Title with colon"));
+		Assert.Contains("title:", result, "Result should contain 'title:'");
+		Assert.Contains("Test: Title with colon", result, "Result should contain 'Test: Title with colon'");
 	}
 
 	[TestMethod]
 	public void SerializeYamlObject_WithNestedCollections_SerializesCorrectly()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>
+		Dictionary<string, object> dictionary = new()
 		{
 			{ "title", "Test Title" },
 			{ "tags", new List<string> { "tag1", "tag2" } },
@@ -201,23 +202,23 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		var result = YamlSerializer.SerializeYamlObject(dictionary);
+		string result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
-		Assert.IsTrue(result.Contains("title: Test Title"));
-		Assert.IsTrue(result.Contains("tags:"));
-		Assert.IsTrue(result.Contains("- tag1"));
-		Assert.IsTrue(result.Contains("- tag2"));
-		Assert.IsTrue(result.Contains("metadata:"));
-		Assert.IsTrue(result.Contains("created:"));
-		Assert.IsTrue(result.Contains("visibility: public"));
+		Assert.Contains("title: Test Title", result, "Result should contain 'title: Test Title'");
+		Assert.Contains("tags:", result, "Result should contain 'tags:'");
+		Assert.Contains("- tag1", result, "Result should contain '- tag1'");
+		Assert.Contains("- tag2", result, "Result should contain '- tag2'");
+		Assert.Contains("metadata:", result, "Result should contain 'metadata:'");
+		Assert.Contains("created:", result, "Result should contain 'created:'");
+		Assert.Contains("visibility: public", result, "Result should contain 'visibility: public'");
 	}
 
 	[TestMethod]
 	public void SerializeYamlObject_WithComplexNestedStructures_SerializesCorrectly()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>
+		Dictionary<string, object> dictionary = new()
 		{
 			{ "title", "Complex Document" },
 			{ "sections", new List<object> {
@@ -243,47 +244,47 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		var result = YamlSerializer.SerializeYamlObject(dictionary);
+		string result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
-		Assert.IsTrue(result.Contains("title: Complex Document"));
-		Assert.IsTrue(result.Contains("sections:"));
-		Assert.IsTrue(result.Contains("- name: Section 1"));
-		Assert.IsTrue(result.Contains("content: Content for section 1"));
-		Assert.IsTrue(result.Contains("subsections:"));
-		Assert.IsTrue(result.Contains("- name: Subsection 1.1"));
-		Assert.IsTrue(result.Contains("content: Content for subsection 1.1"));
-		Assert.IsTrue(result.Contains("- name: Subsection 1.2"));
-		Assert.IsTrue(result.Contains("- name: Section 2"));
-		Assert.IsTrue(result.Contains("content: Content for section 2"));
+		Assert.Contains("title: Complex Document", result, "Result should contain 'title: Complex Document'");
+		Assert.Contains("sections:", result, "Result should contain 'sections:'");
+		Assert.Contains("- name: Section 1", result, "Result should contain '- name: Section 1'");
+		Assert.Contains("content: Content for section 1", result, "Result should contain 'content: Content for section 1'");
+		Assert.Contains("subsections:", result, "Result should contain 'subsections:'");
+		Assert.Contains("- name: Subsection 1.1", result, "Result should contain '- name: Subsection 1.1'");
+		Assert.Contains("content: Content for subsection 1.1", result, "Result should contain 'content: Content for subsection 1.1'");
+		Assert.Contains("- name: Subsection 1.2", result, "Result should contain '- name: Subsection 1.2'");
+		Assert.Contains("- name: Section 2", result, "Result should contain '- name: Section 2'");
+		Assert.Contains("content: Content for section 2", result, "Result should contain 'content: Content for section 2'");
 	}
 
 	[TestMethod]
 	public void SerializeYamlObject_WithMultilineString_FormatsCorrectly()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>
+		Dictionary<string, object> dictionary = new()
 		{
 			{ "title", "Test Title" },
 			{ "description", "This is a\nmultiline\ndescription." }
 		};
 
 		// Act
-		var result = YamlSerializer.SerializeYamlObject(dictionary);
+		string result = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert
 		// The multiline string should be properly serialized with the pipe character
-		Assert.IsTrue(result.Contains("description:"));
-		Assert.IsTrue(result.Contains("This is a"));
-		Assert.IsTrue(result.Contains("multiline"));
-		Assert.IsTrue(result.Contains("description."));
+		Assert.Contains("description:", result, "Result should contain 'description:'");
+		Assert.Contains("This is a", result, "Result should contain 'This is a'");
+		Assert.Contains("multiline", result, "Result should contain 'multiline'");
+		Assert.Contains("description.", result, "Result should contain 'description.'");
 	}
 
 	[TestMethod]
 	public void SerializeAndParse_RoundTrip_PreservesData()
 	{
 		// Arrange
-		var originalDictionary = new Dictionary<string, object>
+		Dictionary<string, object> originalDictionary = new()
 		{
 			{ "title", "Test Title" },
 			{ "tags", new List<string> { "tag1", "tag2" } },
@@ -292,29 +293,29 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		var serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
-		var parseResult = YamlSerializer.TryParseYamlObject(serialized, out var parsedDictionary);
+		string serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
+		bool parseResult = YamlSerializer.TryParseYamlObject(serialized, out Dictionary<string, object>? parsedDictionary);
 
 		// Assert
-		Assert.IsTrue(parseResult);
+		Assert.IsTrue(parseResult, "TryParseYamlObject should return true for round-trip parsing");
 		Assert.IsNotNull(parsedDictionary);
-		Assert.AreEqual(originalDictionary.Count, parsedDictionary.Count);
+		Assert.HasCount(originalDictionary.Count, parsedDictionary);
 		Assert.AreEqual(originalDictionary["title"], parsedDictionary["title"]);
 
 		// YAML deserializer returns numbers as strings, so convert before comparison
 		Assert.AreEqual(originalDictionary["count"].ToString(), parsedDictionary["count"]?.ToString());
 
 		// YAML deserializer might return "true" instead of True, so compare as strings
-		var originalEnabledString = originalDictionary["enabled"]?.ToString()?.ToLowerInvariant();
-		var parsedEnabledString = parsedDictionary["enabled"]?.ToString()?.ToLowerInvariant();
+		string? originalEnabledString = originalDictionary["enabled"]?.ToString()?.ToLowerInvariant();
+		string? parsedEnabledString = parsedDictionary["enabled"]?.ToString()?.ToLowerInvariant();
 		Assert.AreEqual(originalEnabledString, parsedEnabledString);
 
 		// Check the list
-		var originalTags = originalDictionary["tags"] as List<string>;
-		var parsedTags = parsedDictionary["tags"] as System.Collections.IList;
+		List<string>? originalTags = originalDictionary["tags"] as List<string>;
+		System.Collections.IList? parsedTags = parsedDictionary["tags"] as System.Collections.IList;
 		Assert.IsNotNull(originalTags);
 		Assert.IsNotNull(parsedTags);
-		Assert.AreEqual(originalTags.Count, parsedTags.Count);
+		Assert.HasCount(originalTags.Count, parsedTags);
 		Assert.AreEqual(originalTags[0], parsedTags[0]);
 		Assert.AreEqual(originalTags[1], parsedTags[1]);
 	}
@@ -324,7 +325,7 @@ public class YamlSerializerTests
 	public void RoundTrip_WithComplexTypes_PreservesStructure()
 	{
 		// Arrange
-		var originalDictionary = new Dictionary<string, object>
+		Dictionary<string, object> originalDictionary = new()
 		{
 			{ "title", "Complex Document" },
 			{ "nestedObject", new Dictionary<string, object> {
@@ -336,25 +337,25 @@ public class YamlSerializerTests
 		};
 
 		// Act
-		var serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
-		var parseResult = YamlSerializer.TryParseYamlObject(serialized, out var parsedDictionary);
+		string serialized = YamlSerializer.SerializeYamlObject(originalDictionary);
+		bool parseResult = YamlSerializer.TryParseYamlObject(serialized, out Dictionary<string, object>? parsedDictionary);
 
 		// Assert
-		Assert.IsTrue(parseResult);
+		Assert.IsTrue(parseResult, "TryParseYamlObject should return true for complex types round-trip");
 		Assert.IsNotNull(parsedDictionary);
-		Assert.AreEqual(2, parsedDictionary.Count);
+		Assert.HasCount(2, parsedDictionary);
 		Assert.AreEqual("Complex Document", parsedDictionary["title"]);
 
 		// Check nested object
-		var nestedObject = parsedDictionary["nestedObject"] as Dictionary<string, object>;
+		Dictionary<string, object>? nestedObject = parsedDictionary["nestedObject"] as Dictionary<string, object>;
 		Assert.IsNotNull(nestedObject);
-		Assert.AreEqual(4, nestedObject.Count);
+		Assert.HasCount(4, nestedObject);
 		Assert.AreEqual("value1", nestedObject["key1"]);
 
 		// Check nested array
-		var nestedArray = nestedObject["nestedArray"] as System.Collections.IList;
+		System.Collections.IList? nestedArray = nestedObject["nestedArray"] as System.Collections.IList;
 		Assert.IsNotNull(nestedArray);
-		Assert.AreEqual(2, nestedArray.Count);
+		Assert.HasCount(2, nestedArray);
 		Assert.AreEqual("item1", nestedArray[0]);
 		Assert.AreEqual("item2", nestedArray[1]);
 	}
@@ -363,10 +364,10 @@ public class YamlSerializerTests
 	public void TryParseYamlObject_WithCachedValues_ReturnsCachedResult()
 	{
 		// Arrange
-		var yamlContent = "title: Test Title\nauthor: Test Author";
+		string yamlContent = "title: Test Title\nauthor: Test Author";
 
 		// Act - First parse should add to cache
-		var firstParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var firstResult);
+		bool firstParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? firstResult);
 		Assert.IsTrue(firstParseResult, "First parse should succeed");
 		Assert.IsNotNull(firstResult, "First parse result should not be null");
 
@@ -374,10 +375,10 @@ public class YamlSerializerTests
 		firstResult["marker"] = "modified";
 
 		// Act - Second parse should retrieve from cache but return a new copy
-		var secondParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondResult);
+		bool secondParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? secondResult);
 
 		// Assert
-		Assert.IsTrue(secondParseResult);
+		Assert.IsTrue(secondParseResult, "Second parse should succeed");
 		Assert.IsNotNull(secondResult);
 		Assert.IsFalse(secondResult.ContainsKey("marker"), "Second result should be a clean copy without modifications");
 		Assert.AreEqual("Test Title", secondResult["title"]);
@@ -387,20 +388,20 @@ public class YamlSerializerTests
 		yamlContent = "title: Test Title\nmetadata:\n  tags:\n    - tag1\n    - tag2";
 
 		// First parse with nested structure
-		var nestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var nestedResult);
-		Assert.IsTrue(nestedParseResult);
+		bool nestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? nestedResult);
+		Assert.IsTrue(nestedParseResult, "Nested parse should succeed");
 		Assert.IsNotNull(nestedResult);
 
 		// Modify nested structure
-		var metadata = nestedResult["metadata"] as Dictionary<string, object>;
+		Dictionary<string, object>? metadata = nestedResult["metadata"] as Dictionary<string, object>;
 		Assert.IsNotNull(metadata);
-		var tags = metadata["tags"] as List<object>;
+		List<object>? tags = metadata["tags"] as List<object>;
 		Assert.IsNotNull(tags);
 		tags.Add("modified");
 
 		// Get another copy from cache
-		var secondNestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out var secondNestedResult);
-		Assert.IsTrue(secondNestedParseResult);
+		bool secondNestedParseResult = YamlSerializer.TryParseYamlObject(yamlContent, out Dictionary<string, object>? secondNestedResult);
+		Assert.IsTrue(secondNestedParseResult, "Second nested parse should succeed");
 		Assert.IsNotNull(secondNestedResult);
 
 		// Verify the second copy is clean
@@ -408,7 +409,7 @@ public class YamlSerializerTests
 		Assert.IsNotNull(metadata);
 		tags = metadata["tags"] as List<object>;
 		Assert.IsNotNull(tags);
-		Assert.AreEqual(2, tags.Count, "Second result should have original number of tags");
+		Assert.HasCount(2, tags, "Second result should have original number of tags");
 		Assert.AreEqual("tag1", tags[0]);
 		Assert.AreEqual("tag2", tags[1]);
 	}
@@ -417,23 +418,23 @@ public class YamlSerializerTests
 	public void SerializeYamlObject_WithCachedValues_ReturnsCachedResult()
 	{
 		// Arrange
-		var dictionary = new Dictionary<string, object>
+		Dictionary<string, object> dictionary = new()
 		{
 			{ "title", "Test Title" },
 			{ "author", "Test Author" }
 		};
 
 		// Act - First serialization should add to cache
-		var firstResult = YamlSerializer.SerializeYamlObject(dictionary);
+		string firstResult = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Modify the dictionary (should not affect cached result)
 		dictionary["title"] = "Modified Title";
 
 		// Act - Second serialization should retrieve from cache
-		var secondResult = YamlSerializer.SerializeYamlObject(dictionary);
+		string secondResult = YamlSerializer.SerializeYamlObject(dictionary);
 
 		// Assert - Cache should not be used because the dictionary content has changed
-		Assert.IsTrue(secondResult.Contains("Modified Title"));
-		Assert.IsFalse(secondResult.Equals(firstResult));
+		Assert.Contains("Modified Title", secondResult, "Result should contain 'Modified Title'");
+		Assert.IsFalse(secondResult.Equals(firstResult), "Second result should not equal first result after modification");
 	}
 }

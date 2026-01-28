@@ -63,19 +63,19 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string CombineFrontmatter(string input, FrontmatterNaming propertyNamingMode, FrontmatterOrder orderMode, FrontmatterMergeStrategy mergeStrategy)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
 
 		// Generate a unique cache key based on the content and options
-		var optionsHash = (uint)propertyNamingMode | ((uint)orderMode << 8) | ((uint)mergeStrategy << 16);
-		var cacheKey = HashUtil.CreateCacheKey(input, optionsHash);
+		uint optionsHash = (uint)propertyNamingMode | ((uint)orderMode << 8) | ((uint)mergeStrategy << 16);
+		uint cacheKey = HashUtil.CreateCacheKey(input, optionsHash);
 
 		// Try to get from cache first
-		if (ProcessedFrontmatterCache.TryGetValue(cacheKey, out var cachedResult))
+		if (ProcessedFrontmatterCache.TryGetValue(cacheKey, out string? cachedResult))
 		{
 			return cachedResult;
 		}
 
-		var frontmatterObjects = ExtractFrontmatterObjects(input, out var body);
+		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out string body);
 
 		if (frontmatterObjects.Count == 0)
 		{
@@ -84,8 +84,8 @@ public static class Frontmatter
 			return input;
 		}
 
-		var combinedFrontmatterObject = frontmatterObjects.First();
-		foreach (var frontmatterObject in frontmatterObjects.Skip(1))
+		Dictionary<string, object> combinedFrontmatterObject = frontmatterObjects.First();
+		foreach (Dictionary<string, object> frontmatterObject in frontmatterObjects.Skip(1))
 		{
 			combinedFrontmatterObject = CombineFrontmatterObjects(combinedFrontmatterObject, frontmatterObject);
 		}
@@ -108,10 +108,10 @@ public static class Frontmatter
 			combinedFrontmatterObject = SortFrontmatterProperties(combinedFrontmatterObject);
 		}
 
-		var combinedFrontmatter = YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim();
+		string combinedFrontmatter = YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim();
 
-		var nl = Environment.NewLine;
-		var result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
+		string nl = Environment.NewLine;
+		string result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
 
 		// Cache the processed result
 		ProcessedFrontmatterCache.TryAdd(cacheKey, result);
@@ -127,14 +127,14 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static Dictionary<string, object>? ExtractFrontmatter(string input)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
 
 		if (!HasFrontmatter(input))
 		{
 			return null;
 		}
 
-		var frontmatterObjects = ExtractFrontmatterObjects(input, out _);
+		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out _);
 		return frontmatterObjects.Count > 0 ? frontmatterObjects.First() : null;
 	}
 
@@ -146,7 +146,8 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static bool HasFrontmatter(string input)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
+
 		return !string.IsNullOrEmpty(input) && input.StartsWithOrdinal(FrontmatterDelimiter + Environment.NewLine);
 	}
 
@@ -159,7 +160,7 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string AddFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
 
 		if (frontmatter == null || frontmatter.Count == 0)
 		{
@@ -169,13 +170,13 @@ public static class Frontmatter
 		if (HasFrontmatter(input))
 		{
 			// Document already has frontmatter, use CombineFrontmatter instead
-			var existing = ExtractFrontmatter(input);
-			var combined = CombineFrontmatterObjects(existing ?? [], frontmatter);
+			Dictionary<string, object>? existing = ExtractFrontmatter(input);
+			Dictionary<string, object> combined = CombineFrontmatterObjects(existing ?? [], frontmatter);
 			return ReplaceFrontmatter(input, combined);
 		}
 
-		var yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
-		var nl = Environment.NewLine;
+		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
+		string nl = Environment.NewLine;
 		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{input.Trim()}{nl}";
 	}
 
@@ -188,16 +189,16 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string ReplaceFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
 
 		if (frontmatter == null || frontmatter.Count == 0)
 		{
 			return RemoveFrontmatter(input);
 		}
 
-		ExtractFrontmatterObjects(input, out var body);
-		var yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
-		var nl = Environment.NewLine;
+		ExtractFrontmatterObjects(input, out string body);
+		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
+		string nl = Environment.NewLine;
 		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body.Trim()}{nl}";
 	}
 
@@ -209,14 +210,14 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string RemoveFrontmatter(string input)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
 
 		if (!HasFrontmatter(input))
 		{
 			return input;
 		}
 
-		ExtractFrontmatterObjects(input, out var body);
+		ExtractFrontmatterObjects(input, out string body);
 		return body.Trim() + Environment.NewLine;
 	}
 
@@ -228,9 +229,9 @@ public static class Frontmatter
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string ExtractBody(string input)
 	{
-		ArgumentNullException.ThrowIfNull(input);
+		Ensure.NotNull(input);
 
-		ExtractFrontmatterObjects(input, out var body);
+		ExtractFrontmatterObjects(input, out string body);
 		return body.Trim();
 	}
 
@@ -252,16 +253,16 @@ public static class Frontmatter
 		Dictionary<string, object> sortedFrontmatter = [];
 
 		// First add properties in the standard order (if they exist)
-		foreach (var key in StandardOrder.PropertyNames)
+		foreach (string key in StandardOrder.PropertyNames)
 		{
-			if (frontmatter.TryGetValue(key, out var value))
+			if (frontmatter.TryGetValue(key, out object? value))
 			{
 				sortedFrontmatter[key] = value;
 			}
 		}
 
 		// Then add any remaining properties that weren't in the standard order
-		foreach (var property in frontmatter)
+		foreach (KeyValuePair<string, object> property in frontmatter)
 		{
 			if (!sortedFrontmatter.ContainsKey(property.Key))
 			{
@@ -281,7 +282,7 @@ public static class Frontmatter
 	/// <exception cref="InvalidOperationException">Thrown when there are too many frontmatter sections in the document.</exception>
 	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body)
 	{
-		var frontmatterObjects = new List<Dictionary<string, object>>();
+		List<Dictionary<string, object>> frontmatterObjects = [];
 		body = input;
 
 		if (!HasFrontmatter(input))
@@ -289,18 +290,18 @@ public static class Frontmatter
 			return frontmatterObjects;
 		}
 
-		var sections = input.Split([FrontmatterDelimiter + Environment.NewLine], StringSplitOptions.None);
+		string[] sections = input.Split([FrontmatterDelimiter + Environment.NewLine], StringSplitOptions.None);
 		body = string.Join(FrontmatterDelimiter + Environment.NewLine, sections.Skip(2));
 
-		for (var i = 1; i < sections.Length; i += 2)
+		for (int i = 1; i < sections.Length; i += 2)
 		{
-			var section = sections[i].Trim();
+			string section = sections[i].Trim();
 			if (string.IsNullOrWhiteSpace(section))
 			{
 				continue;
 			}
 
-			if (YamlSerializer.TryParseYamlObject(section, out var frontmatterObject) && frontmatterObject != null)
+			if (YamlSerializer.TryParseYamlObject(section, out Dictionary<string, object>? frontmatterObject) && frontmatterObject != null)
 			{
 				frontmatterObjects.Add(frontmatterObject);
 			}
@@ -321,13 +322,13 @@ public static class Frontmatter
 		Dictionary<string, object> combinedFrontmatterObject = [];
 
 		// First, add all properties from dictionary a
-		foreach (var kvp in a)
+		foreach (KeyValuePair<string, object> kvp in a)
 		{
 			combinedFrontmatterObject[kvp.Key] = kvp.Value;
 		}
 
 		// Then, add properties from dictionary b that don't exist in a
-		foreach (var kvp in b)
+		foreach (KeyValuePair<string, object> kvp in b)
 		{
 			if (!combinedFrontmatterObject.ContainsKey(kvp.Key))
 			{

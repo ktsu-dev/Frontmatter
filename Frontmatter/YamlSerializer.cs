@@ -53,14 +53,14 @@ public static class YamlSerializer
 		}
 
 		// Compute a hash of the content for the cache key
-		var cacheKey = HashUtil.ComputeHash(input);
+		uint cacheKey = HashUtil.ComputeHash(input);
 
 		// Try to get from cache first
-		if (ParsedYamlCache.TryGetValue(cacheKey, out var cachedResult))
+		if (ParsedYamlCache.TryGetValue(cacheKey, out Dictionary<string, object>? cachedResult))
 		{
 			// Create a deep copy of the cached dictionary to prevent mutations from affecting other copies
 			result = [];
-			foreach (var pair in cachedResult)
+			foreach (KeyValuePair<string, object> pair in cachedResult)
 			{
 				result[pair.Key] = DeepCloneValue(pair.Value);
 			}
@@ -71,15 +71,15 @@ public static class YamlSerializer
 		try
 		{
 			// Simple approach with direct deserializer
-			var rawData = Deserializer.Deserialize<Dictionary<object, object>>(input);
+			Dictionary<object, object> rawData = Deserializer.Deserialize<Dictionary<object, object>>(input);
 			result = [];
 
 			// Convert dictionary keys to strings and preserve the first occurrence of duplicate keys
-			foreach (var pair in rawData)
+			foreach (KeyValuePair<object, object> pair in rawData)
 			{
 				if (pair.Key != null)
 				{
-					var key = pair.Key.ToString()!;
+					string key = pair.Key.ToString()!;
 					// Only add the key if it doesn't already exist
 					if (!result.ContainsKey(key))
 					{
@@ -93,8 +93,8 @@ public static class YamlSerializer
 			if (result.Count > 0)
 			{
 				// Create a deep copy for caching to prevent the cached instance from being modified
-				var cacheResult = new Dictionary<string, object>();
-				foreach (var pair in result)
+				Dictionary<string, object> cacheResult = [];
+				foreach (KeyValuePair<string, object> pair in result)
 				{
 					cacheResult[pair.Key] = DeepCloneValue(pair.Value);
 				}
@@ -137,10 +137,12 @@ public static class YamlSerializer
 	{
 		return value switch
 		{
-			Dictionary<string, object> dict => new Dictionary<string, object>(dict.Select(kvp =>
-				new KeyValuePair<string, object>(kvp.Key, DeepCloneValue(kvp.Value)))),
-			Dictionary<object, object> dict => new Dictionary<string, object>(dict.Select(kvp =>
-				new KeyValuePair<string, object>(kvp.Key?.ToString() ?? string.Empty, DeepCloneValue(kvp.Value)))),
+			Dictionary<string, object> dict => dict.ToDictionary(
+				kvp => kvp.Key,
+				kvp => DeepCloneValue(kvp.Value)),
+			Dictionary<object, object> dict => dict.ToDictionary(
+				kvp => kvp.Key?.ToString() ?? string.Empty,
+				kvp => DeepCloneValue(kvp.Value)),
 			IList<object> list => list.Select(DeepCloneValue).ToList(),
 			System.Collections.IList list => list.Cast<object>().Select(DeepCloneValue).ToList(),
 			_ => value // For primitive types and strings, which are immutable
