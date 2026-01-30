@@ -1,3 +1,8 @@
+## v1.2.3-pre.1 (prerelease)
+
+Changes since v1.2.2:
+
+- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 ## v1.2.2 (patch)
 
 Changes since v1.2.1:
@@ -15,12 +20,7 @@ Changes since v1.2.2-pre.1:
 - Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 ## v1.2.2-pre.1 (prerelease)
 
-Changes since v1.2.1:
-
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitignore ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+Incremental prerelease update.
 ## v1.2.1 (patch)
 
 Changes since v1.2.0:
