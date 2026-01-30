@@ -1,5 +1,5 @@
-## v1.2.2-pre.3 (prerelease)
+## v1.2.2 (patch)
 
-Changes since v1.2.2-pre.2:
+Changes since v1.2.1:
 
-- Bump Polyfill from 9.7.6 to 9.7.7 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
