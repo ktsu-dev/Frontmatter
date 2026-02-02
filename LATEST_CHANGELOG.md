@@ -1,6 +1,5 @@
-## v1.2.3-pre.5 (prerelease)
+## v1.2.3-pre.6 (prerelease)
 
-Changes since v1.2.3-pre.4:
+Changes since v1.2.3-pre.5:
 
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
