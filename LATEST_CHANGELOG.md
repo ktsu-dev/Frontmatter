@@ -1,8 +1,5 @@
-## v1.2.3-pre.7 (prerelease)
+## v1.2.3-pre.8 (prerelease)
 
-Changes since v1.2.3-pre.6:
+Changes since v1.2.3-pre.7:
 
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Bump Polyfill from 9.7.7 to 9.8.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
