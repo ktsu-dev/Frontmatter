@@ -1,3 +1,9 @@
+## v1.2.4 (patch)
+
+Changes since v1.2.3:
+
+- Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
+
 ## v1.2.3 (patch)
 
 Changes since v1.2.2:
@@ -110,9 +116,7 @@ Changes since v1.2.3-pre.1:
 
 ## v1.2.3-pre.1 (prerelease)
 
-Changes since v1.2.2:
-
-- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+No significant changes detected since v1.2.3.
 
 ## v1.2.2 (patch)
 
