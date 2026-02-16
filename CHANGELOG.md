@@ -1,3 +1,10 @@
+## v1.2.6 (patch)
+
+Changes since v1.2.5:
+
+- Bump Polyfill from 9.8.1 to 9.9.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+
 ## v1.2.5 (patch)
 
 Changes since v1.2.4:
@@ -10,11 +17,7 @@ Changes since v1.2.4:
 
 ## v1.2.5-pre.1 (prerelease)
 
-Changes since v1.2.4:
-
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+No significant changes detected since v1.2.5.
 
 ## v1.2.4 (patch)
 
