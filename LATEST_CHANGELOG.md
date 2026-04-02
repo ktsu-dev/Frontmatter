@@ -2,6 +2,10 @@
 
 Changes since v1.2.9:
 
+- Bump Polyfill from 9.22.0 to 9.23.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.18.0 to 9.22.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump Polyfill from 9.17.0 to 9.18.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump Polyfill from 9.16.0 to 9.17.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump Polyfill from 9.14.0 to 9.16.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
