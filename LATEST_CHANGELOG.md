@@ -2,6 +2,7 @@
 
 Changes since v1.2.9:
 
+- Bump YamlDotNet from 16.3.0 to 17.0.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump Polyfill from 10.0.0 to 10.1.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump MSTest.Sdk from 4.1.0 to 4.2.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump Polyfill from 9.24.0 to 10.0.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
