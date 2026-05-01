@@ -2,6 +2,7 @@
 
 Changes since v1.2.9:
 
+- Bump MSTest.Sdk from 4.2.1 to 4.2.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump YamlDotNet from 17.0.1 to 17.1.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
