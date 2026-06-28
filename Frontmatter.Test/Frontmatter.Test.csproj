@@ -10,8 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Frontmatter\Frontmatter.csproj" />
-    <PackageReference Update="Microsoft.SourceLink.AzureRepos.Git" />
-    <PackageReference Update="Microsoft.SourceLink.GitHub" />
   </ItemGroup>
 
 </Project>
