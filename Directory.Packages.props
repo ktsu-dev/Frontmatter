@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="HashDepot" Version="2.0.3" />
-    <PackageVersion Include="ktsu.Extensions" Version="1.5.25" />
+    <PackageVersion Include="ktsu.Extensions" Version="1.5.26" />
     <PackageVersion Include="ktsu.FuzzySearch" Version="1.2.24" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="1.7.2" />
