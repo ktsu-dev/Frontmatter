@@ -5,7 +5,7 @@
   <ItemGroup>
     <PackageVersion Include="HashDepot" Version="2.0.3" />
     <PackageVersion Include="ktsu.Extensions" Version="1.5.30" />
-    <PackageVersion Include="ktsu.FuzzySearch" Version="1.2.27" />
+    <PackageVersion Include="ktsu.FuzzySearch" Version="1.2.28" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="1.7.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.Fakes" Version="17.14.1" />
