@@ -3,10 +3,19 @@
   <Sdk Name="ktsu.Sdk" />
 
   <ItemGroup>
-    <PackageReference Include="Polyfill" />
+    <PackageReference Include="Polyfill" PrivateAssets="all" />
     <PackageReference Include="HashDepot" />
     <PackageReference Include="ktsu.Extensions" />
     <PackageReference Include="ktsu.FuzzySearch" />
     <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Memory" />
   </ItemGroup>
 </Project>
