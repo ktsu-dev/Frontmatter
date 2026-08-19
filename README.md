@@ -2,6 +2,14 @@
 
 A .NET library for processing and manipulating YAML frontmatter in markdown files.
 
+[![License](https://img.shields.io/github/license/ktsu-dev/Frontmatter.svg?label=License&logo=nuget)](LICENSE.md)
+[![NuGet Version](https://img.shields.io/nuget/v/ktsu.Frontmatter?label=Stable&logo=nuget)](https://nuget.org/packages/ktsu.Frontmatter)
+[![NuGet Version](https://img.shields.io/nuget/vpre/ktsu.Frontmatter?label=Latest&logo=nuget)](https://nuget.org/packages/ktsu.Frontmatter)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ktsu.Frontmatter?label=Downloads&logo=nuget)](https://nuget.org/packages/ktsu.Frontmatter)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/Frontmatter?label=Commits&logo=github)](https://github.com/ktsu-dev/Frontmatter/commits/main)
+[![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/Frontmatter?label=Contributors&logo=github)](https://github.com/ktsu-dev/Frontmatter/graphs/contributors)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/Frontmatter/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/Frontmatter/actions)
+
 ## Features
 
 - Extract, add, replace, and remove frontmatter from markdown documents
