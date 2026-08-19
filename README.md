@@ -8,7 +8,7 @@ A .NET library for processing and manipulating YAML frontmatter in markdown file
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ktsu.Frontmatter?label=Downloads&logo=nuget)](https://nuget.org/packages/ktsu.Frontmatter)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/Frontmatter?label=Commits&logo=github)](https://github.com/ktsu-dev/Frontmatter/commits/main)
 [![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/Frontmatter?label=Contributors&logo=github)](https://github.com/ktsu-dev/Frontmatter/graphs/contributors)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/Frontmatter/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/Frontmatter/actions)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/Frontmatter/dotnet.yml?branch=main&label=Build&logo=github)](https://github.com/ktsu-dev/Frontmatter/actions)
 
 ## Features
 
