@@ -146,7 +146,7 @@ public static class Frontmatter
 	{
 		Ensure.NotNull(input);
 
-		return !string.IsNullOrEmpty(input) && input.StartsWithOrdinal(FrontmatterDelimiter + Environment.NewLine);
+		return !string.IsNullOrEmpty(input) && input.StartsWithOrdinal(FrontmatterDelimiter + DetectNewLine(input));
 	}
 
 	/// <summary>
@@ -272,6 +272,32 @@ public static class Frontmatter
 	}
 
 	/// <summary>
+	/// Finds the line ending a document actually uses, rather than assuming the host's.
+	/// </summary>
+	/// <remarks>
+	/// A markdown file written on Windows still holds CRLF when it is read on Linux, and one
+	/// written on Linux still holds LF when it is read on Windows. Line endings travel with the
+	/// document, so parsing has to follow the document rather than the machine it is parsed on.
+	/// Writing is a separate question and still uses the host convention.
+	/// </remarks>
+	/// <param name="input">The document to inspect.</param>
+	/// <returns>The ending that terminates the first line, or the host's when there is none.</returns>
+	private static string DetectNewLine(string input)
+	{
+		// The first line is the opening delimiter, so its terminator is the one the delimiter
+		// search has to match. Scanning the whole document instead would pick up a stray ending
+		// from the body, and a document written here with LF but quoting CRLF content would then
+		// report CRLF and fail to match the delimiter it had just written itself.
+		int index = input.IndexOfAny(['\r', '\n']);
+
+		return index < 0
+			? Environment.NewLine
+			: input[index] == '\n' ? "\n"
+			: index + 1 < input.Length && input[index + 1] == '\n' ? "\r\n"
+			: "\r";
+	}
+
+	/// <summary>
 	/// Extracts all frontmatter objects from a markdown document.
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
@@ -288,8 +314,9 @@ public static class Frontmatter
 			return frontmatterObjects;
 		}
 
-		string[] sections = input.Split([FrontmatterDelimiter + Environment.NewLine], StringSplitOptions.None);
-		body = string.Join(FrontmatterDelimiter + Environment.NewLine, sections.Skip(2));
+		string documentNewLine = DetectNewLine(input);
+		string[] sections = input.Split([FrontmatterDelimiter + documentNewLine], StringSplitOptions.None);
+		body = string.Join(FrontmatterDelimiter + documentNewLine, sections.Skip(2));
 
 		for (int i = 1; i < sections.Length; i += 2)
 		{
