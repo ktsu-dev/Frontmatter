@@ -1,6 +1,6 @@
-## v1.2.28 (patch)
+## v1.2.29 (patch)
 
-Changes since v1.2.27:
+Changes since v1.2.28:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
