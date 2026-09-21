@@ -26,9 +26,8 @@ public class FuzzyRankingTests
 		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.Standard);
 		Dictionary<string, object>? extracted = Frontmatter.ExtractFrontmatter(result);
 
-		Assert.IsNotNull(extracted);
-
-		return extracted;
+		return extracted ?? throw new AssertFailedException(
+			$"Standardizing '{key}' produced no frontmatter to assert against.");
 	}
 
 	[TestMethod]
