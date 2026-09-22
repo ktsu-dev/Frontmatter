@@ -1,7 +1,7 @@
-## v1.2.34 (patch)
+## v1.2.35 (patch)
 
-Changes since v1.2.33:
+Changes since v1.2.34:
 
-- Bump Polyfill from 11.3.0 to 11.4.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Throw rather than assert on the nullable in the test helper ([@Claude](https://github.com/Claude))
+- [patch] Rank standardized property names by fuzzy similarity ([@Claude](https://github.com/Claude))
 
