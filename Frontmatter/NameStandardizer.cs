@@ -98,17 +98,30 @@ internal static class NameStandardizer
 			return exactMatch;
 		}
 
-		// Try partial matches
+		// Try partial matches. Containment only says a standard property is plausible, so the
+		// candidates it admits are ranked by fuzzy similarity rather than returning whichever one
+		// StandardOrder.PropertyNames happens to list first. Ties keep the earlier property, so the
+		// standard order still decides when the scores cannot.
+		string? bestProperty = null;
+		int bestScore = int.MinValue;
+
 		foreach (string standardProperty in standardProperties)
 		{
 			string normalizedStandard = NormalizePropertyName(standardProperty);
-			if (normalizedKey.Contains(normalizedStandard) || normalizedStandard.Contains(normalizedKey))
+			if (!normalizedKey.Contains(normalizedStandard) && !normalizedStandard.Contains(normalizedKey))
 			{
-				return standardProperty;
+				continue;
+			}
+
+			int score = FuzzyRanking.Score(normalizedKey, normalizedStandard);
+			if (score > bestScore)
+			{
+				bestProperty = standardProperty;
+				bestScore = score;
 			}
 		}
 
-		return null;
+		return bestProperty;
 	}
 
 	private static string NormalizePropertyName(string key)
