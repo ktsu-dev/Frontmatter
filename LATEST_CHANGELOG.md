@@ -1,7 +1,6 @@
-## v1.2.35 (patch)
+## v1.2.36 (patch)
 
-Changes since v1.2.34:
+Changes since v1.2.35:
 
-- Throw rather than assert on the nullable in the test helper ([@Claude](https://github.com/Claude))
-- [patch] Rank standardized property names by fuzzy similarity ([@Claude](https://github.com/Claude))
+- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
