@@ -15,9 +15,11 @@ using YamlDotNet.Serialization.NamingConventions;
 public static class YamlSerializer
 {
 	/// <summary>
-	/// Cache for parsed YAML to avoid repeated parsing
+	/// Cache for parsed YAML to avoid repeated parsing.
+	/// Keyed by the YAML text itself, compared ordinally, so a cache hit means the input really is
+	/// identical rather than merely hashing alike.
 	/// </summary>
-	private static readonly ConcurrentDictionary<uint, Dictionary<string, object>> ParsedYamlCache = new();
+	private static readonly ConcurrentDictionary<string, Dictionary<string, object>> ParsedYamlCache = new(StringComparer.Ordinal);
 
 	/// <summary>
 	/// Reusable deserializer instance
@@ -50,11 +52,8 @@ public static class YamlSerializer
 			return false;
 		}
 
-		// Compute a hash of the content for the cache key
-		uint cacheKey = HashUtil.ComputeHash(input);
-
 		// Try to get from cache first
-		if (ParsedYamlCache.TryGetValue(cacheKey, out Dictionary<string, object>? cachedResult))
+		if (ParsedYamlCache.TryGetValue(input, out Dictionary<string, object>? cachedResult))
 		{
 			// Create a deep copy of the cached dictionary to prevent mutations from affecting other copies
 			result = [];
@@ -97,7 +96,7 @@ public static class YamlSerializer
 					cacheResult[pair.Key] = DeepCloneValue(pair.Value);
 				}
 
-				ParsedYamlCache.TryAdd(cacheKey, cacheResult);
+				ParsedYamlCache.TryAdd(input, cacheResult);
 				return true;
 			}
 		}

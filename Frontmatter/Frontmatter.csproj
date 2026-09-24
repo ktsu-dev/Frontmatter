@@ -4,7 +4,6 @@
 
   <ItemGroup>
     <PackageReference Include="Polyfill" PrivateAssets="all" />
-    <PackageReference Include="HashDepot" />
     <PackageReference Include="ktsu.Extensions" />
     <PackageReference Include="ktsu.FuzzySearch" />
     <PackageReference Include="YamlDotNet" />

@@ -435,4 +435,53 @@ public class YamlSerializerTests
 		Assert.Contains("Modified Title", secondResult, "Result should contain 'Modified Title'");
 		Assert.IsFalse(secondResult.Equals(firstResult), "Second result should not equal first result after modification");
 	}
+
+	/// <summary>
+	/// The two inputs below are distinct but share an FNV-1a-32 hash (0x27196CB9), the function the
+	/// parse cache used to key on. A cache keyed on that hash alone hands the second input the first
+	/// input's parse, so the cache must compare the text itself.
+	/// </summary>
+	[TestMethod]
+	public void TryParseYamlObject_WithHashCollidingInputs_ParsesEachIndependently()
+	{
+		// Arrange - both are single-line documents, so newline conventions do not enter into it
+		string first = "title: Release Notes 19";
+		string second = "title: Release Notes 386342";
+		Assert.AreNotEqual(first, second, "The two inputs must be distinct for this test to mean anything");
+
+		// Act
+		bool firstParsed = YamlSerializer.TryParseYamlObject(first, out Dictionary<string, object>? firstResult);
+		bool secondParsed = YamlSerializer.TryParseYamlObject(second, out Dictionary<string, object>? secondResult);
+
+		// Assert
+		Assert.IsTrue(firstParsed, "The first input is valid YAML and should parse");
+		Assert.IsTrue(secondParsed, "The second input is valid YAML and should parse");
+		Assert.IsNotNull(firstResult);
+		Assert.IsNotNull(secondResult);
+		Assert.AreEqual("Release Notes 19", firstResult["title"]);
+		Assert.AreEqual("Release Notes 386342", secondResult["title"], "The second input must not be served the first input's cached parse");
+	}
+
+	/// <summary>
+	/// Guards the cache itself: parsing the same text twice must still agree. Passes both before and
+	/// after the collision fix by design, so a later change cannot quietly make the cache incoherent.
+	/// </summary>
+	[TestMethod]
+	public void TryParseYamlObject_WithTheSameInputTwice_ReturnsEqualResults()
+	{
+		// Arrange
+		string input = "title: Cache Coherence\nauthor: Cache Test Author";
+
+		// Act
+		bool firstParsed = YamlSerializer.TryParseYamlObject(input, out Dictionary<string, object>? firstResult);
+		bool secondParsed = YamlSerializer.TryParseYamlObject(input, out Dictionary<string, object>? secondResult);
+
+		// Assert
+		Assert.IsTrue(firstParsed);
+		Assert.IsTrue(secondParsed);
+		Assert.IsNotNull(firstResult);
+		Assert.IsNotNull(secondResult);
+		Assert.AreEqual(firstResult["title"], secondResult["title"]);
+		Assert.AreEqual(firstResult["author"], secondResult["author"]);
+	}
 }
