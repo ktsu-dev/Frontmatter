@@ -52,22 +52,18 @@ internal static class PropertyNameNormalizer
 	{
 		key = key.Trim().ToLowerInvariant();
 
-		foreach (string prefix in Prefixes)
+		// At most one prefix and one suffix are removed, so this is find-first-then-act rather than
+		// a filter: the captured key is reassigned between the two steps.
+		string? matchedPrefix = Array.Find(Prefixes, prefix => key.StartsWith(prefix, StringComparison.Ordinal));
+		if (matchedPrefix is not null)
 		{
-			if (key.StartsWith(prefix, StringComparison.Ordinal))
-			{
-				key = key[prefix.Length..];
-				break;
-			}
+			key = key[matchedPrefix.Length..];
 		}
 
-		foreach (string suffix in Suffixes)
+		string? matchedSuffix = Array.Find(Suffixes, suffix => key.EndsWith(suffix, StringComparison.Ordinal));
+		if (matchedSuffix is not null)
 		{
-			if (key.EndsWith(suffix, StringComparison.Ordinal))
-			{
-				key = key[..^suffix.Length];
-				break;
-			}
+			key = key[..^matchedSuffix.Length];
 		}
 
 		return string.Join("_", key.Split(Separators, StringSplitOptions.RemoveEmptyEntries));

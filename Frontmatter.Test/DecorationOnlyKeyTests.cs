@@ -102,7 +102,7 @@ public class DecorationOnlyKeyTests
 
 	private static string Single(Dictionary<string, object> result)
 	{
-		Assert.AreEqual(1, result.Count);
+		Assert.HasCount(1, result);
 		return result.Keys.First();
 	}
 }

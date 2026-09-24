@@ -66,7 +66,7 @@ public class PropertyNameNormalizerTests
 	[TestMethod]
 	public void NormalizeToWords_SplitsNormalizedForm()
 	{
-		CollectionAssert.AreEqual(reviewStatusWords, PropertyNameNormalizer.NormalizeToWords(" page_Review-Status "));
-		CollectionAssert.AreEqual(noWords, PropertyNameNormalizer.NormalizeToWords("page_"));
+		Assert.AreSequenceEqual(reviewStatusWords, PropertyNameNormalizer.NormalizeToWords(" page_Review-Status "));
+		Assert.AreSequenceEqual(noWords, PropertyNameNormalizer.NormalizeToWords("page_"));
 	}
 }
