@@ -206,6 +206,16 @@ internal static class PropertyMerger
 		// Remove common prefixes/suffixes and special characters
 		string normalizedKey = NormalizePropertyName(key);
 
+		// A key that normalizes away to nothing has no content to match on. Both loops below would
+		// otherwise treat it as equal to, or contained by, every other key — the exact-match loop
+		// pairs it with any other decoration-only key, and the partial-match loop admits it against
+		// all of them, since every string contains the empty string. Either way the key is merged
+		// into an unrelated one and its value is lost, so leave it alone.
+		if (normalizedKey.Length == 0)
+		{
+			return key;
+		}
+
 		// Look for exact matches after normalization
 		foreach (string existingKey in existingKeys)
 		{
@@ -258,7 +268,7 @@ internal static class PropertyMerger
 		}
 
 		// Then try more aggressive matching using word similarity
-		string[] keyWords = NormalizePropertyName(key).Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries);
+		string[] keyWords = PropertyNameNormalizer.NormalizeToWords(key);
 
 		// Find best match among existing keys
 		(string Key, int Score)? bestMatch = existingKeys
@@ -266,7 +276,7 @@ internal static class PropertyMerger
 				Key: existingKey,
 				Score: CalculateWordMatchScore(
 					keyWords,
-					NormalizePropertyName(existingKey).Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries)
+					PropertyNameNormalizer.NormalizeToWords(existingKey)
 				)
 			))
 			.Where(match => match.Score > 0)
@@ -277,38 +287,7 @@ internal static class PropertyMerger
 		return bestMatch?.Key ?? key;
 	}
 
-	private static string NormalizePropertyName(string key)
-	{
-		// Convert to lowercase and trim
-		key = key.Trim().ToLowerInvariant();
-
-		// Common prefixes and suffixes to remove
-		string[] prefixes = ["page_", "post_", "meta_", "custom_", "user_", "site_"];
-		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
-
-		// Remove prefixes
-		foreach (string prefix in prefixes)
-		{
-			if (key.StartsWith(prefix, StringComparison.Ordinal))
-			{
-				key = key[prefix.Length..];
-				break;
-			}
-		}
-
-		// Remove suffixes
-		foreach (string suffix in suffixes)
-		{
-			if (key.EndsWith(suffix, StringComparison.Ordinal))
-			{
-				key = key[..^suffix.Length];
-				break;
-			}
-		}
-
-		// Replace special characters with underscores and remove duplicates
-		return string.Join("_", key.Split(['-', ' ', '_'], StringSplitOptions.RemoveEmptyEntries));
-	}
+	private static string NormalizePropertyName(string key) => PropertyNameNormalizer.Normalize(key);
 
 	private static int CalculateWordMatchScore(string[] words1, string[] words2)
 	{

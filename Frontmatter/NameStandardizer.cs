@@ -90,6 +90,17 @@ internal static class NameStandardizer
 
 	private static string? FindStandardPropertyMatch(string normalizedKey, string[] standardProperties)
 	{
+		// A key whose normalized form is empty carries nothing to match on: every non-empty standard
+		// property trivially contains the empty string, so without this guard such a key is admitted
+		// by the containment test below against the whole standard set and silently renamed to
+		// whichever one ranks first. Keys that normalize away entirely are decoration-only ("page_",
+		// "_value", "_") or whitespace, and preserving them is the only safe answer for a library
+		// whose job is round-tripping frontmatter.
+		if (normalizedKey.Length == 0)
+		{
+			return null;
+		}
+
 		// Try exact match first
 		string? exactMatch = standardProperties.FirstOrDefault(p =>
 			string.Equals(NormalizePropertyName(p), normalizedKey, StringComparison.OrdinalIgnoreCase));
@@ -124,42 +135,5 @@ internal static class NameStandardizer
 		return bestProperty;
 	}
 
-	private static string NormalizePropertyName(string key)
-	{
-		// Convert to lowercase
-		key = key.ToLowerInvariant();
-
-		// Remove common prefixes
-		string[] prefixes = ["page_", "post_", "meta_", "custom_", "user_", "site_"];
-		foreach (string prefix in prefixes)
-		{
-			if (key.StartsWith(prefix))
-			{
-				key = key[prefix.Length..];
-				break;
-			}
-		}
-
-		// Remove common suffixes
-		string[] suffixes = ["_value", "_text", "_data", "_info", "_meta", "_field"];
-		foreach (string suffix in suffixes)
-		{
-			if (key.EndsWith(suffix))
-			{
-				key = key[..^suffix.Length];
-				break;
-			}
-		}
-
-		// Replace special characters with underscores
-		key = key.Replace('-', '_').Replace(' ', '_');
-
-		// Remove duplicate underscores
-		while (key.Contains("__"))
-		{
-			key = key.Replace("__", "_");
-		}
-
-		return key.Trim('_');
-	}
+	private static string NormalizePropertyName(string key) => PropertyNameNormalizer.Normalize(key);
 }
