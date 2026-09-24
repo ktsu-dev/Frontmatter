@@ -19,9 +19,11 @@ public static class Frontmatter
 	private const string FrontmatterDelimiter = "---";
 
 	/// <summary>
-	/// Cache for processed frontmatter to avoid repeated processing of identical content
+	/// Cache for processed frontmatter to avoid repeated processing of identical content.
+	/// Keyed by the document text together with the option flags it was processed under, so a cache
+	/// hit means the input really is identical rather than merely hashing alike.
 	/// </summary>
-	private static readonly ConcurrentDictionary<uint, string> ProcessedFrontmatterCache = new();
+	private static readonly ConcurrentDictionary<(string Content, uint Options), string> ProcessedFrontmatterCache = new();
 
 	/// <summary>
 	/// Combines multiple frontmatter sections in a markdown document into a single frontmatter section.
@@ -65,7 +67,7 @@ public static class Frontmatter
 
 		// Generate a unique cache key based on the content and options
 		uint optionsHash = (uint)propertyNamingMode | ((uint)orderMode << 8) | ((uint)mergeStrategy << 16);
-		uint cacheKey = HashUtil.CreateCacheKey(input, optionsHash);
+		(string Content, uint Options) cacheKey = (input, optionsHash);
 
 		// Try to get from cache first
 		if (ProcessedFrontmatterCache.TryGetValue(cacheKey, out string? cachedResult))

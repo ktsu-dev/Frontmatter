@@ -243,4 +243,47 @@ public class CombineFrontmatterTests
 		Assert.AreEqual("tag1", tags[0]);
 		Assert.AreEqual("tag2", tags[1]);
 	}
+
+	/// <summary>
+	/// The two documents below are distinct but share an FNV-1a-32 hash (0x12657B7E), the function the
+	/// processed-document cache used to key on. Since both are processed under the same options, the
+	/// combined key collides too, and the second document is served the first one's output.
+	/// </summary>
+	[TestMethod]
+	public void CombineFrontmatter_WithHashCollidingDocuments_ProcessesEachIndependently()
+	{
+		// Arrange - "\n" rather than Environment.NewLine so the bytes hashed are the same on every
+		// platform; DetectNewLine reads the document's own convention, so both still parse.
+		string first = "---\ntitle: Release Notes 281277\n---\n";
+		string second = "---\ntitle: Release Notes 1084130\n---\n";
+		Assert.AreNotEqual(first, second, "The two documents must be distinct for this test to mean anything");
+
+		// Act
+		string firstResult = Frontmatter.CombineFrontmatter(first);
+		string secondResult = Frontmatter.CombineFrontmatter(second);
+
+		// Assert
+		Assert.Contains("Release Notes 281277", firstResult, "The first document should keep its own title");
+		Assert.Contains("Release Notes 1084130", secondResult, "The second document should keep its own title");
+		Assert.DoesNotContain("Release Notes 281277", secondResult, "The second document must not be served the first document's cached result");
+	}
+
+	/// <summary>
+	/// Guards the cache itself: combining the same document twice must still agree. Passes both before
+	/// and after the collision fix by design, so a later change cannot quietly make the cache incoherent.
+	/// </summary>
+	[TestMethod]
+	public void CombineFrontmatter_WithTheSameDocumentTwice_ReturnsEqualResults()
+	{
+		// Arrange
+		string input = "---\ntitle: Cache Coherence Document\n---\nBody text.\n";
+
+		// Act
+		string firstResult = Frontmatter.CombineFrontmatter(input);
+		string secondResult = Frontmatter.CombineFrontmatter(input);
+
+		// Assert
+		Assert.AreEqual(firstResult, secondResult);
+		Assert.Contains("Cache Coherence Document", firstResult, "The result should carry the document's own title");
+	}
 }
