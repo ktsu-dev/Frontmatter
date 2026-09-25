@@ -241,6 +241,11 @@ internal static class PropertyMerger
 			}
 
 			string normalizedExisting2 = NormalizePropertyName(existingKey);
+			if (!PropertyNameNormalizer.MayMatchByContainment(normalizedKey, normalizedExisting2))
+			{
+				continue;
+			}
+
 			if (normalizedKey.Contains(normalizedExisting2, StringComparison.OrdinalIgnoreCase) ||
 				normalizedExisting2.Contains(normalizedKey, StringComparison.OrdinalIgnoreCase))
 			{
@@ -300,7 +305,8 @@ internal static class PropertyMerger
 				{
 					score += 2;
 				}
-				else if (word1.Contains(word2) || word2.Contains(word1))
+				else if (PropertyNameNormalizer.MayMatchByContainment(word1, word2) &&
+					(word1.Contains(word2) || word2.Contains(word1)))
 				{
 					score += 1;
 				}

@@ -70,6 +70,41 @@ internal static class PropertyNameNormalizer
 	}
 
 	/// <summary>
+	/// The shortest normalized name a containment test is allowed to match on.
+	/// </summary>
+	/// <remarks>
+	/// Two is the smallest value that changes nothing legitimate: the shortest names anywhere in
+	/// <see cref="StandardOrder.PropertyNames"/> or <see cref="PropertyMappings"/> are <c>by</c>,
+	/// <c>tag</c> and <c>url</c>, and no standard property or mapping name normalizes to fewer than
+	/// two characters, so nothing real is matched by containment on a single character.
+	/// </remarks>
+	private const int MinimumMatchableLength = 2;
+
+	/// <summary>
+	/// Whether two normalized names carry enough content to be compared by containment.
+	/// </summary>
+	/// <param name="first">One normalized name.</param>
+	/// <param name="second">The other normalized name.</param>
+	/// <returns><see langword="true"/> when a containment match between the two would be meaningful.</returns>
+	/// <remarks>
+	/// <para>
+	/// Containment is tested in both directions, so the short side is what makes a match meaningless
+	/// regardless of which argument it is. A one-character fragment is contained in every candidate
+	/// that happens to use that letter, so it is admitted on an incidental letter rather than on a
+	/// shared word: <c>meta_x_field</c> normalizes to <c>x</c>, and <c>next</c> contains <c>x</c>.
+	/// </para>
+	/// <para>
+	/// This is the same failure the empty-string guards in <see cref="NameStandardizer"/> and
+	/// <see cref="PropertyMerger"/> already document, one character further along — a value silently
+	/// attributed to an unrelated property, and in the merger's case dropped outright. It applies to
+	/// containment only: exact matching on a one-character normalized form stays available, so a
+	/// genuine single-character key still pairs with another key that normalizes to the same thing.
+	/// </para>
+	/// </remarks>
+	internal static bool MayMatchByContainment(string first, string second) =>
+		first.Length >= MinimumMatchableLength && second.Length >= MinimumMatchableLength;
+
+	/// <summary>
 	/// Normalizes a property name and splits it into its constituent words.
 	/// </summary>
 	/// <param name="key">The property name to normalize and split.</param>
