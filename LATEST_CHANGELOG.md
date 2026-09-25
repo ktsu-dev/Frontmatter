@@ -1,8 +1,6 @@
-## v1.2.39 (patch)
+## v1.2.40 (patch)
 
-Changes since v1.2.38:
+Changes since v1.2.39:
 
-- Key the content caches by their input, not a 32-bit hash ([@Claude](https://github.com/Claude))
-- [patch] Clear the five SonarCloud findings on the new code ([@Claude](https://github.com/Claude))
-- [patch] Fold the two NormalizePropertyName helpers and stop decoration-only keys being renamed ([@Claude](https://github.com/Claude))
+- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
