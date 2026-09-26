@@ -119,6 +119,11 @@ internal static class NameStandardizer
 		foreach (string standardProperty in standardProperties)
 		{
 			string normalizedStandard = NormalizePropertyName(standardProperty);
+			if (!PropertyNameNormalizer.MayMatchByContainment(normalizedKey, normalizedStandard))
+			{
+				continue;
+			}
+
 			if (!normalizedKey.Contains(normalizedStandard) && !normalizedStandard.Contains(normalizedKey))
 			{
 				continue;
