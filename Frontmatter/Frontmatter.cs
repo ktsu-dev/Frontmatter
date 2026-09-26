@@ -171,6 +171,15 @@ public static class Frontmatter
 		{
 			// Document already has frontmatter, use CombineFrontmatter instead
 			Dictionary<string, object>? existing = ExtractFrontmatter(input);
+
+			// Frontmatter that is present but could not be read is left alone rather than overwritten, so a
+			// gap in parsing loses nothing. Only a genuinely empty block is treated as having no properties.
+			if (existing == null
+				&& (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out _) || blocks.Exists(block => !string.IsNullOrWhiteSpace(block))))
+			{
+				return input;
+			}
+
 			Dictionary<string, object> combined = CombineFrontmatterObjects(existing ?? [], frontmatter);
 			return ReplaceFrontmatter(input, combined);
 		}
@@ -309,20 +318,15 @@ public static class Frontmatter
 	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body)
 	{
 		List<Dictionary<string, object>> frontmatterObjects = [];
-		body = input;
 
-		if (!HasFrontmatter(input))
+		if (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out body))
 		{
 			return frontmatterObjects;
 		}
 
-		string documentNewLine = DetectNewLine(input);
-		string[] sections = input.Split([FrontmatterDelimiter + documentNewLine], StringSplitOptions.None);
-		body = string.Join(FrontmatterDelimiter + documentNewLine, sections.Skip(2));
-
-		for (int i = 1; i < sections.Length; i += 2)
+		foreach (string block in blocks)
 		{
-			string section = sections[i].Trim();
+			string section = block.Trim();
 			if (string.IsNullOrWhiteSpace(section))
 			{
 				continue;
@@ -336,6 +340,100 @@ public static class Frontmatter
 
 		return frontmatterObjects;
 	}
+
+	/// <summary>
+	/// Splits the frontmatter blocks at the top of a document from its body.
+	/// </summary>
+	/// <remarks>
+	/// Delimiters are recognised only as whole lines, so a <c>---</c> inside a value or a markdown
+	/// horizontal rule in the body is never mistaken for one. The first line opens a block, which closes
+	/// at the next delimiter line, including one at the very end of the document. Further blocks are
+	/// consumed only while each opens on the line straight after the previous one closed; the body is
+	/// everything after the last block consumed.
+	/// </remarks>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <param name="blocks">The raw text of each frontmatter block, in document order.</param>
+	/// <param name="body">The document after the last frontmatter block, or the whole input when there is none.</param>
+	/// <returns>True if at least one closed frontmatter block was found, false otherwise.</returns>
+	private static bool TrySplitFrontmatterBlocks(string input, out List<string> blocks, out string body)
+	{
+		blocks = [];
+		body = input;
+
+		if (!HasFrontmatter(input))
+		{
+			return false;
+		}
+
+		List<(int Start, int End)> lines = SplitLines(input);
+		bool IsDelimiterAt(int index) => IsDelimiterLine(input[lines[index].Start..lines[index].End]);
+
+		int next = 0;
+		while (next < lines.Count && IsDelimiterAt(next))
+		{
+			int close = next + 1;
+			while (close < lines.Count && !IsDelimiterAt(close))
+			{
+				close++;
+			}
+
+			if (close == lines.Count)
+			{
+				break;
+			}
+
+			blocks.Add(close == next + 1
+				? string.Empty
+				: input[lines[next + 1].Start..lines[close - 1].End]);
+			next = close + 1;
+		}
+
+		if (blocks.Count == 0)
+		{
+			return false;
+		}
+
+		body = next < lines.Count ? input[lines[next].Start..] : string.Empty;
+		return true;
+	}
+
+	/// <summary>
+	/// Finds the lines of a document, recognising CRLF, LF and CR endings wherever they occur.
+	/// </summary>
+	/// <param name="input">The document to split.</param>
+	/// <returns>The start and end offset of each line, excluding its line ending.</returns>
+	private static List<(int Start, int End)> SplitLines(string input)
+	{
+		List<(int Start, int End)> lines = [];
+		int start = 0;
+
+		for (int i = 0; i < input.Length; i++)
+		{
+			char c = input[i];
+			if (c is not '\r' and not '\n')
+			{
+				continue;
+			}
+
+			lines.Add((start, i));
+			if (c == '\r' && i + 1 < input.Length && input[i + 1] == '\n')
+			{
+				i++;
+			}
+
+			start = i + 1;
+		}
+
+		lines.Add((start, input.Length));
+		return lines;
+	}
+
+	/// <summary>
+	/// Checks whether a line is a frontmatter delimiter, allowing trailing whitespace.
+	/// </summary>
+	/// <param name="line">The line to check, without its line ending.</param>
+	/// <returns>True if the line is a frontmatter delimiter, false otherwise.</returns>
+	private static bool IsDelimiterLine(string line) => line.TrimEnd() == FrontmatterDelimiter;
 
 	/// <summary>
 	/// Combines two frontmatter dictionaries into a single dictionary.
