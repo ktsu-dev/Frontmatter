@@ -1,6 +1,6 @@
-## v1.2.40 (patch)
+## v1.2.41 (patch)
 
-Changes since v1.2.39:
+Changes since v1.2.40:
 
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- [patch] Stop a single-character key being containment-matched onto unrelated properties ([@Claude](https://github.com/Claude))
 
