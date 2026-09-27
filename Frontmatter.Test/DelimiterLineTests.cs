@@ -143,4 +143,52 @@ public class DelimiterLineTests
 
 		Assert.AreEqual($"---{Nl}---{Nl}Body", Frontmatter.ExtractBody(input));
 	}
+
+	[TestMethod]
+	[DataRow("--- ", DisplayName = "Trailing space")]
+	[DataRow("---\t", DisplayName = "Trailing tab")]
+	[DataRow("\uFEFF---", DisplayName = "Byte order mark")]
+	public void HasFrontmatter_OpeningDelimiterHasTrailingWhitespaceOrBom_RecognisesTheHeader(string opening)
+	{
+		string input = $"{opening}{Nl}title: A{Nl}---{Nl}Body{Nl}";
+
+		Assert.IsTrue(Frontmatter.HasFrontmatter(input));
+	}
+
+	[TestMethod]
+	[DataRow("--- ", DisplayName = "Trailing space")]
+	[DataRow("---\t", DisplayName = "Trailing tab")]
+	[DataRow("\uFEFF---", DisplayName = "Byte order mark")]
+	public void ExtractFrontmatter_OpeningDelimiterHasTrailingWhitespaceOrBom_ReadsTheHeader(string opening)
+	{
+		string input = $"{opening}{Nl}title: A{Nl}---{Nl}Body{Nl}";
+
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(input);
+
+		Assert.IsNotNull(frontmatter);
+		Assert.HasCount(1, frontmatter);
+		Assert.AreEqual("A", frontmatter["title"]);
+		Assert.AreEqual("Body", Frontmatter.ExtractBody(input));
+	}
+
+	[TestMethod]
+	[DataRow("--- ", DisplayName = "Trailing space")]
+	[DataRow("---\t", DisplayName = "Trailing tab")]
+	[DataRow("\uFEFF---", DisplayName = "Byte order mark")]
+	public void AddFrontmatter_OpeningDelimiterHasTrailingWhitespaceOrBom_MergesIntoTheExistingHeader(string opening)
+	{
+		string input = $"{opening}{Nl}title: A{Nl}---{Nl}Body{Nl}";
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["author"] = "B" });
+
+		Assert.AreEqual($"---{Nl}title: A{Nl}author: B{Nl}---{Nl}Body{Nl}", result);
+	}
+
+	[TestMethod]
+	public void HasFrontmatter_DelimiterWithoutLineEnding_IsNotFrontmatter()
+	{
+		Assert.IsFalse(Frontmatter.HasFrontmatter("--- "));
+		Assert.IsFalse(Frontmatter.HasFrontmatter("\uFEFF"));
+		Assert.IsFalse(Frontmatter.HasFrontmatter(string.Empty));
+	}
 }

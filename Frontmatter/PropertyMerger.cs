@@ -172,18 +172,20 @@ internal static class PropertyMerger
 		string canonicalKey,
 		List<string> originalKeys)
 	{
-		HashSet<object> mergedList = [];
+		// Lists are appended in order. An item is dropped only when an earlier list being merged already
+		// supplied it, never because it repeats within its own list: a list such as recipe steps or
+		// scores can legitimately hold the same value more than once.
+		List<object> mergedList = [];
+		HashSet<object> fromEarlierLists = [];
 		foreach (string key in originalKeys)
 		{
-			object value = source[key];
-			if (value is IList<object> list)
+			if (source[key] is not IList<object> items)
 			{
-				mergedList.UnionWith(list);
+				continue;
 			}
-			else if (value is object[] array)
-			{
-				mergedList.UnionWith(array);
-			}
+
+			mergedList.AddRange(items.Where(item => !fromEarlierLists.Contains(item)));
+			fromEarlierLists.UnionWith(items);
 		}
 
 		target[canonicalKey] = mergedList.ToArray();
