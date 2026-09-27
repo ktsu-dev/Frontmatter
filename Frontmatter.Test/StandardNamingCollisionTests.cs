@@ -22,8 +22,8 @@ public class StandardNamingCollisionTests
 
 		Assert.IsNotNull(frontmatter);
 		Assert.AreEqual("Alice", frontmatter["author"]);
-		Assert.IsTrue(frontmatter.ContainsKey("creator"), "creator's list must survive alongside author");
-		CollectionAssert.AreEqual(new object[] { "Bob" }, (System.Collections.ICollection)frontmatter["creator"]);
+		Assert.IsTrue(frontmatter.TryGetValue("creator", out object? creator), "creator's list must survive alongside author");
+		CollectionAssert.AreEqual(new object[] { "Bob" }, (System.Collections.ICollection)creator);
 	}
 
 	[TestMethod]
