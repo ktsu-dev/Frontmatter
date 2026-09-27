@@ -32,8 +32,8 @@ public class MergeStrategyIsolationTests
 		Dictionary<string, object> conservative = PropertyMerger.MergeSimilarProperties(Document(), FrontmatterMergeStrategy.Conservative);
 
 		Assert.AreEqual("T", conservative["title"]);
-		Assert.IsTrue(conservative.ContainsKey("custom_title"), "Conservative only applies predefined mappings, so custom_title must survive");
-		Assert.AreEqual("C", conservative["custom_title"]);
+		Assert.IsTrue(conservative.TryGetValue("custom_title", out object? customTitle), "Conservative only applies predefined mappings, so custom_title must survive");
+		Assert.AreEqual("C", customTitle);
 	}
 
 	[TestMethod]
@@ -67,8 +67,8 @@ public class MergeStrategyIsolationTests
 			["page_blurb"] = "Only",
 		}, FrontmatterMergeStrategy.Aggressive);
 
-		Assert.IsTrue(later.ContainsKey("page_blurb"), "With no other key to merge with, page_blurb keeps its name");
-		Assert.AreEqual("Only", later["page_blurb"]);
+		Assert.IsTrue(later.TryGetValue("page_blurb", out object? pageBlurb), "With no other key to merge with, page_blurb keeps its name");
+		Assert.AreEqual("Only", pageBlurb);
 	}
 
 	[TestMethod]
