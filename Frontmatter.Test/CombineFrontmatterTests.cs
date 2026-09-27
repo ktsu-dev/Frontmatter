@@ -253,7 +253,7 @@ public class CombineFrontmatterTests
 	public void CombineFrontmatter_WithHashCollidingDocuments_ProcessesEachIndependently()
 	{
 		// Arrange - "\n" rather than Environment.NewLine so the bytes hashed are the same on every
-		// platform; DetectNewLine reads the document's own convention, so both still parse.
+		// platform; parsing follows the document's own line endings, so both still parse.
 		string first = "---\ntitle: Release Notes 281277\n---\n";
 		string second = "---\ntitle: Release Notes 1084130\n---\n";
 		Assert.AreNotEqual(first, second, "The two documents must be distinct for this test to mean anything");
