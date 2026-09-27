@@ -348,8 +348,9 @@ public static class Frontmatter
 	/// Delimiters are recognised only as whole lines, so a <c>---</c> inside a value or a markdown
 	/// horizontal rule in the body is never mistaken for one. The first line opens a block, which closes
 	/// at the next delimiter line, including one at the very end of the document. Further blocks are
-	/// consumed only while each opens on the line straight after the previous one closed; the body is
-	/// everything after the last block consumed.
+	/// consumed only while each opens on the line straight after the previous one closed and holds
+	/// frontmatter rather than body text (see <see cref="IsFollowOnBlock"/>); the body is everything after
+	/// the last block consumed.
 	/// </remarks>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <param name="blocks">The raw text of each frontmatter block, in document order.</param>
@@ -382,9 +383,19 @@ public static class Frontmatter
 				break;
 			}
 
-			blocks.Add(close == next + 1
+			string block = close == next + 1
 				? string.Empty
-				: input[lines[next + 1].Start..lines[close - 1].End]);
+				: input[lines[next + 1].Start..lines[close - 1].End];
+
+			// A thematic break placed directly under the header looks like the start of another block.
+			// Only the first block is taken on trust; a later one must look like frontmatter, or it and
+			// everything after it stay in the body.
+			if (blocks.Count > 0 && !IsFollowOnBlock(block, lines, next, close, input))
+			{
+				break;
+			}
+
+			blocks.Add(block);
 			next = close + 1;
 		}
 
@@ -395,6 +406,33 @@ public static class Frontmatter
 
 		body = next < lines.Count ? input[lines[next].Start..] : string.Empty;
 		return true;
+	}
+
+	/// <summary>
+	/// Checks whether a block that follows the first one is really frontmatter rather than body text
+	/// set between two thematic breaks.
+	/// </summary>
+	/// <remarks>
+	/// A follow-on block has to hold a non-empty YAML mapping, and it may not open or close with a blank
+	/// line. Stacked headers are written tight against their delimiters, whereas markdown around a
+	/// thematic break is usually spaced out from it, so a blank line marks the block as body text even
+	/// when that text happens to parse as YAML.
+	/// </remarks>
+	/// <param name="block">The raw text between the block's delimiters.</param>
+	/// <param name="lines">The lines of the document.</param>
+	/// <param name="open">The index of the block's opening delimiter line.</param>
+	/// <param name="close">The index of the block's closing delimiter line.</param>
+	/// <param name="input">The document.</param>
+	/// <returns>True if the block should be read as frontmatter, false if it belongs to the body.</returns>
+	private static bool IsFollowOnBlock(string block, List<(int Start, int End)> lines, int open, int close, string input)
+	{
+		bool IsBlankAt(int index) => string.IsNullOrWhiteSpace(input[lines[index].Start..lines[index].End]);
+
+		return close > open + 1
+			&& !IsBlankAt(open + 1)
+			&& !IsBlankAt(close - 1)
+			&& YamlSerializer.TryParseYamlObject(block.Trim(), out Dictionary<string, object>? properties)
+			&& properties.Count > 0;
 	}
 
 	/// <summary>
