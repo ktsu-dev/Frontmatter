@@ -68,7 +68,13 @@ public static class YamlSerializer
 		try
 		{
 			// Simple approach with direct deserializer
-			Dictionary<object, object> rawData = Deserializer.Deserialize<Dictionary<object, object>>(input);
+			// A document with no content (a comment only, ~ or null) deserializes to null
+			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(input);
+			if (rawData is null)
+			{
+				return false;
+			}
+
 			result = [];
 
 			// Convert dictionary keys to strings and preserve the first occurrence of duplicate keys
