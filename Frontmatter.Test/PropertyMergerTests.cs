@@ -745,4 +745,48 @@ public class PropertyMergerTests
 		// Tags variants should be merged
 		Assert.IsTrue(extractedFrontmatter.ContainsKey("tags"), "Result should contain key 'tags'");
 	}
+
+	[TestMethod]
+	public void MergeSimilarProperties_SingleListWithRepeatedItems_KeepsEveryItem()
+	{
+		Dictionary<string, object> frontmatter = new()
+		{
+			{ "steps", new List<object> { "mix", "wait", "mix" } },
+			{ "scores", new List<object> { "1", "1", "2" } }
+		};
+
+		Dictionary<string, object> result = PropertyMerger.MergeSimilarProperties(frontmatter, FrontmatterMergeStrategy.Conservative);
+
+		CollectionAssert.AreEqual(new object[] { "mix", "wait", "mix" }, (System.Collections.ICollection)result["steps"]);
+		CollectionAssert.AreEqual(new object[] { "1", "1", "2" }, (System.Collections.ICollection)result["scores"]);
+	}
+
+	[TestMethod]
+	public void MergeSimilarProperties_MergedListsRepeatWithinOneList_KeepsTheRepeatsAndDropsOnlyCrossListDuplicates()
+	{
+		Dictionary<string, object> frontmatter = new()
+		{
+			{ "tags", new List<object> { "a", "a", "c" } },
+			{ "tag", new List<object> { "b", "c", "b" } }
+		};
+
+		Dictionary<string, object> result = PropertyMerger.MergeSimilarProperties(frontmatter, FrontmatterMergeStrategy.Conservative);
+
+		Assert.HasCount(1, result);
+		CollectionAssert.AreEqual(new object[] { "a", "a", "c", "b", "b" }, (System.Collections.ICollection)result["tags"]);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_SingleBlockWithRepeatedListItems_RoundTripsTheLists()
+	{
+		string nl = Environment.NewLine;
+		string input = $"---{nl}steps: [mix, wait, mix]{nl}scores: [1, 1, 2]{nl}---{nl}Body{nl}";
+
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.Conservative);
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(result);
+
+		Assert.IsNotNull(frontmatter);
+		CollectionAssert.AreEqual(new object[] { "mix", "wait", "mix" }, (System.Collections.ICollection)frontmatter["steps"]);
+		CollectionAssert.AreEqual(new object[] { "1", "1", "2" }, (System.Collections.ICollection)frontmatter["scores"]);
+	}
 }
