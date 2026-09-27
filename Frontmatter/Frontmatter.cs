@@ -6,8 +6,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-using ktsu.Extensions;
-
 /// <summary>
 /// Provides methods for processing and manipulating YAML frontmatter in markdown files.
 /// </summary>
@@ -17,6 +15,11 @@ public static class Frontmatter
 	/// The delimiter that marks the beginning and end of a frontmatter section.
 	/// </summary>
 	private const string FrontmatterDelimiter = "---";
+
+	/// <summary>
+	/// The byte order mark a document may begin with when it was decoded without stripping it.
+	/// </summary>
+	private const char ByteOrderMark = '\uFEFF';
 
 	/// <summary>
 	/// Cache for processed frontmatter to avoid repeated processing of identical content.
@@ -148,8 +151,20 @@ public static class Frontmatter
 	{
 		Ensure.NotNull(input);
 
-		return !string.IsNullOrEmpty(input) && input.StartsWithOrdinal(FrontmatterDelimiter + DetectNewLine(input));
+		// The opening delimiter follows the same rule as the closing one, so trailing whitespace an editor
+		// left behind does not hide the header. A leading byte order mark is skipped, since callers that
+		// decode bytes or streams themselves keep it where File.ReadAllText would strip it.
+		int start = OpeningLineStart(input);
+		int end = input.IndexOfAny(['\r', '\n'], start);
+		return end >= 0 && IsDelimiterLine(input[start..end]);
 	}
+
+	/// <summary>
+	/// Finds where the first line of a document starts, skipping a leading byte order mark.
+	/// </summary>
+	/// <param name="input">The document to inspect.</param>
+	/// <returns>The offset of the first character after any byte order mark.</returns>
+	private static int OpeningLineStart(string input) => input.Length > 0 && input[0] == ByteOrderMark ? 1 : 0;
 
 	/// <summary>
 	/// Adds frontmatter to a markdown document that doesn't already have it.
@@ -283,32 +298,6 @@ public static class Frontmatter
 	}
 
 	/// <summary>
-	/// Finds the line ending a document actually uses, rather than assuming the host's.
-	/// </summary>
-	/// <remarks>
-	/// A markdown file written on Windows still holds CRLF when it is read on Linux, and one
-	/// written on Linux still holds LF when it is read on Windows. Line endings travel with the
-	/// document, so parsing has to follow the document rather than the machine it is parsed on.
-	/// Writing is a separate question and still uses the host convention.
-	/// </remarks>
-	/// <param name="input">The document to inspect.</param>
-	/// <returns>The ending that terminates the first line, or the host's when there is none.</returns>
-	private static string DetectNewLine(string input)
-	{
-		// The first line is the opening delimiter, so its terminator is the one the delimiter
-		// search has to match. Scanning the whole document instead would pick up a stray ending
-		// from the body, and a document written here with LF but quoting CRLF content would then
-		// report CRLF and fail to match the delimiter it had just written itself.
-		int index = input.IndexOfAny(['\r', '\n']);
-
-		return index < 0
-			? Environment.NewLine
-			: input[index] == '\n' ? "\n"
-			: index + 1 < input.Length && input[index + 1] == '\n' ? "\r\n"
-			: "\r";
-	}
-
-	/// <summary>
 	/// Extracts all frontmatter objects from a markdown document.
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
@@ -366,6 +355,7 @@ public static class Frontmatter
 		}
 
 		List<(int Start, int End)> lines = SplitLines(input);
+		lines[0] = (OpeningLineStart(input), lines[0].End);
 		bool IsDelimiterAt(int index) => IsDelimiterLine(input[lines[index].Start..lines[index].End]);
 
 		int next = 0;
