@@ -5,9 +5,7 @@
 namespace ktsu.Frontmatter.Test;
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reflection;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -23,22 +21,6 @@ public class PropertyMergerTests
 	private static readonly string[] value = ["cat1"];
 	private static readonly string[] valueArray = ["tag1", "tag2"];
 	private static readonly string[] valueArray0 = ["tag2", "tag3"];
-
-	[TestInitialize]
-	public void ClearPropertyMergerCache()
-	{
-		// Clear the static cache between tests using reflection
-		FieldInfo? cacheField = typeof(PropertyMerger).GetField("PropertyMergeCache",
-			BindingFlags.NonPublic | BindingFlags.Static);
-
-		if (cacheField != null)
-		{
-			ConcurrentDictionary<string, string>? cache = cacheField.GetValue(null) as ConcurrentDictionary<string, string>;
-			cache?.Clear();
-		}
-
-		Console.WriteLine("Cache cleared");
-	}
 
 	[TestMethod]
 	public void MergeSimilarProperties_NoStrategy_DoesntMergeAnything()
