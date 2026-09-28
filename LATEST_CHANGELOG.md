@@ -1,11 +1,7 @@
-## v1.3.2 (patch)
+## v1.3.3-pre.1 (prerelease)
 
-Changes since v1.3.1:
+Changes since v1.3.2:
 
-- Use TryGetValue instead of ContainsKey plus indexer in collision test ([@matt-edmondson](https://github.com/matt-edmondson))
-- Use TryGetValue instead of ContainsKey plus indexer in merge-isolation tests ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Keep both values when two keys standardize to the same name ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Stop the merge-strategy cache letting one call decide a key for every later call ([@matt-edmondson](https://github.com/matt-edmondson))
-- Merge remote-tracking branch 'origin/main' into fix/rule-under-header-stays-in-body ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Keep a thematic break directly under the header in the body ([@matt-edmondson](https://github.com/matt-edmondson))
+- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 

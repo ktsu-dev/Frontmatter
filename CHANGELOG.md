@@ -1,3 +1,10 @@
+## v1.3.3-pre.1 (prerelease)
+
+Changes since v1.3.2:
+
+- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+
 ## v1.3.2 (patch)
 
 Changes since v1.3.1:
@@ -38,13 +45,17 @@ Changes since v1.2.0:
 - docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
 - Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
 - Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 - chore: remove unused SourceLink package versions ([@matt-edmondson](https://github.com/matt-edmondson))
 - chore: remove redundant package version and source link entries ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add TAGS.md with NuGet package tags ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
+- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
 - Migrate to dotnet 10 ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update project configuration and scripts for improved build processes ([@matt-edmondson](https://github.com/matt-edmondson))
 - Update configuration files and scripts for improved build and test processes ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -67,6 +78,7 @@ Changes since v1.2.0:
 - Remove obsolete test files for PropertyMerger ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add isolation tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add unit tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
+- Update GitHub Actions workflow to include CHANGELOG.md in release notes ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.2.41 (patch)
 
@@ -229,8 +241,10 @@ Changes since v1.2.16:
 Changes since v1.2.15:
 
 - Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
 - Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 
 ## v1.2.15 (patch)
 
@@ -289,12 +303,13 @@ Changes since v1.2.7:
 
 Changes since v1.2.6:
 
-- Bump Polyfill from 9.9.0 to 9.10.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 - Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 
 ## v1.2.7-pre.1 (prerelease)
 
-No significant changes detected since v1.2.7.
+Changes since v1.2.6:
+
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 
 ## v1.2.6 (patch)
 
@@ -315,7 +330,11 @@ Changes since v1.2.4:
 
 ## v1.2.5-pre.1 (prerelease)
 
-No significant changes detected since v1.2.5.
+Changes since v1.2.4:
+
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
 
 ## v1.2.4 (patch)
 
@@ -435,19 +454,15 @@ Changes since v1.2.3-pre.1:
 
 ## v1.2.3-pre.1 (prerelease)
 
-No significant changes detected since v1.2.3.
+Changes since v1.2.2:
+
+- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
 ## v1.2.2 (patch)
 
 Changes since v1.2.1:
 
 - Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
-- Bump Polyfill from 9.7.6 to 9.7.7 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitignore ([@ktsu[bot]](https://github.com/ktsu[bot]))
 
 ## v1.2.2-pre.3 (prerelease)
 
@@ -463,7 +478,12 @@ Changes since v1.2.2-pre.1:
 
 ## v1.2.2-pre.1 (prerelease)
 
-No significant changes detected since v1.2.2.
+Changes since v1.2.1:
+
+- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .gitignore ([@ktsu[bot]](https://github.com/ktsu[bot]))
 
 ## v1.2.1 (patch)
 
@@ -491,6 +511,7 @@ Changes since v1.2.0:
 - Remove obsolete test files for PropertyMerger ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add isolation tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add unit tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
+- Update GitHub Actions workflow to include CHANGELOG.md in release notes ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.2.0 (minor)
 
