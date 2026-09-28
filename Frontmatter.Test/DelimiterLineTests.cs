@@ -108,6 +108,43 @@ public class DelimiterLineTests
 	}
 
 	[TestMethod]
+	public void ExtractBody_RuleUnderHeaderAroundNonYamlText_KeepsTheWholeBody()
+	{
+		string input = $"---{Nl}title: A{Nl}---{Nl}---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}";
+
+		Assert.AreEqual($"---{Nl}Important paragraph{Nl}{Nl}---{Nl}More", Frontmatter.ExtractBody(input));
+		Assert.AreEqual($"---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}", Frontmatter.RemoveFrontmatter(input));
+	}
+
+	[TestMethod]
+	public void AddFrontmatter_RuleUnderHeaderAroundNonYamlText_KeepsTheWholeBody()
+	{
+		string input = $"---{Nl}title: A{Nl}---{Nl}---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}";
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["author"] = "B" });
+
+		Assert.AreEqual($"---{Nl}title: A{Nl}author: B{Nl}---{Nl}---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}", result);
+	}
+
+	[TestMethod]
+	public void CombineFrontmatter_RuleUnderHeaderAroundYamlLikeText_DoesNotMergeItIntoTheHeader()
+	{
+		string input = $"---{Nl}title: My Post{Nl}---{Nl}---{Nl}Note: read this first{Nl}{Nl}---{Nl}{Nl}# Heading{Nl}";
+
+		string result = Frontmatter.CombineFrontmatter(input, FrontmatterNaming.AsIs, FrontmatterOrder.AsIs, FrontmatterMergeStrategy.None);
+
+		Assert.AreEqual(input, result);
+	}
+
+	[TestMethod]
+	public void ExtractBody_EmptyBlockUnderHeader_KeepsTheRulesInTheBody()
+	{
+		string input = $"---{Nl}title: A{Nl}---{Nl}---{Nl}---{Nl}Body{Nl}";
+
+		Assert.AreEqual($"---{Nl}---{Nl}Body", Frontmatter.ExtractBody(input));
+	}
+
+	[TestMethod]
 	[DataRow("--- ", DisplayName = "Trailing space")]
 	[DataRow("---\t", DisplayName = "Trailing tab")]
 	[DataRow("\uFEFF---", DisplayName = "Byte order mark")]
