@@ -27,59 +27,48 @@ internal static class NameStandardizer
 
 		// Create fuzzy matches for properties that don't match standard names
 		Dictionary<string, object> standardizedFrontmatter = [];
+		KeyValuePair<string, object>[] properties = [.. frontmatter];
 
-		foreach (KeyValuePair<string, object> property in frontmatter)
+		for (int i = 0; i < properties.Length; i++)
 		{
-			// Skip if it's already a standard property name
-			if (Array.Exists(standardProperties, p => string.Equals(p, property.Key, StringComparison.OrdinalIgnoreCase)))
-			{
-				standardizedFrontmatter[property.Key.ToLowerInvariant()] = property.Value;
-				continue;
-			}
+			KeyValuePair<string, object> property = properties[i];
+			string standardName = GetStandardName(property.Key, standardProperties);
 
-			// Check if we've already processed this property name before
-			if (PropertyNameCache.TryGetValue(property.Key, out string? mappedName))
-			{
-				// If the mapped name is the same as the original, it means we previously determined
-				// there's no good match, so keep the original
-				if (mappedName == property.Key)
-				{
-					standardizedFrontmatter[property.Key] = property.Value;
-				}
-				else
-				{
-					// Use the previously matched property name
-					standardizedFrontmatter[mappedName] = property.Value;
-				}
+			// Two keys can resolve to the same standard name (author + creator, Title + title). Only
+			// rename a key when its standard name is free: not already written, and not the exact name
+			// of a key still to come. Otherwise keep the original key, so neither value is lost.
+			bool isFree = standardName == property.Key ||
+				(!standardizedFrontmatter.ContainsKey(standardName) &&
+				!properties.Skip(i + 1).Any(later => later.Key == standardName));
 
-				continue;
-			}
-
-			// Try to find a match in known property mappings
-			string? knownMapping = FindKnownPropertyMapping(property.Key);
-			if (knownMapping != null)
-			{
-				PropertyNameCache.TryAdd(property.Key, knownMapping);
-				standardizedFrontmatter[knownMapping] = property.Value;
-				continue;
-			}
-
-			// Try to find a match by removing common prefixes and suffixes
-			string normalizedKey = NormalizePropertyName(property.Key);
-			string? standardMatch = FindStandardPropertyMatch(normalizedKey, standardProperties);
-			if (standardMatch != null)
-			{
-				PropertyNameCache.TryAdd(property.Key, standardMatch);
-				standardizedFrontmatter[standardMatch] = property.Value;
-				continue;
-			}
-
-			// If no match found, preserve the original property name
-			PropertyNameCache.TryAdd(property.Key, property.Key);
-			standardizedFrontmatter[property.Key] = property.Value;
+			standardizedFrontmatter[isFree ? standardName : property.Key] = property.Value;
 		}
 
 		return standardizedFrontmatter;
+	}
+
+	private static string GetStandardName(string key, string[] standardProperties)
+	{
+		// Already a standard property name, possibly in a different case
+		if (Array.Exists(standardProperties, p => string.Equals(p, key, StringComparison.OrdinalIgnoreCase)))
+		{
+			return key.ToLowerInvariant();
+		}
+
+		// Check if we've already processed this property name before
+		if (PropertyNameCache.TryGetValue(key, out string? mappedName))
+		{
+			return mappedName;
+		}
+
+		// Try to find a match in known property mappings, then by removing common prefixes and
+		// suffixes. If no match is found, preserve the original property name.
+		string standardName = FindKnownPropertyMapping(key)
+			?? FindStandardPropertyMatch(NormalizePropertyName(key), standardProperties)
+			?? key;
+
+		PropertyNameCache.TryAdd(key, standardName);
+		return standardName;
 	}
 
 	private static string? FindKnownPropertyMapping(string key)
