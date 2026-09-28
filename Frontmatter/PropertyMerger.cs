@@ -2,7 +2,6 @@
 
 namespace ktsu.Frontmatter;
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,11 +10,6 @@ using System.Linq;
 /// </summary>
 internal static class PropertyMerger
 {
-	/// <summary>
-	/// Cache for property merge mappings
-	/// </summary>
-	private static readonly ConcurrentDictionary<string, string> PropertyMergeCache = new();
-
 	/// <summary>
 	/// Merges properties that capture redundant information based on the specified strategy.
 	/// </summary>
@@ -55,18 +49,14 @@ internal static class PropertyMerger
 		return mergedFrontmatter;
 	}
 
+	// Not cached: the canonical name depends on the strategy and, for Aggressive and Maximum, on the
+	// other keys in the same document. A cache keyed on the property name alone let whichever call
+	// reached a key first decide its fate for every later call in the process.
 	private static string GetCanonicalName(string key, FrontmatterMergeStrategy strategy, string[] frontmatterKeys)
 	{
-		// Try to find in cache first
-		if (PropertyMergeCache.TryGetValue(key, out string? cachedName))
-		{
-			return cachedName;
-		}
-
 		// For None strategy or keys with special characters, preserve the original key
 		if (strategy == FrontmatterMergeStrategy.None || key.Any(c => !char.IsLetterOrDigit(c) && c != '_' && c != '-'))
 		{
-			PropertyMergeCache.TryAdd(key, key);
 			return key;
 		}
 
@@ -80,13 +70,7 @@ internal static class PropertyMerger
 		};
 
 		// If no mapping was found, preserve the original key
-		if (string.IsNullOrEmpty(canonicalName) || canonicalName == key)
-		{
-			canonicalName = key;
-		}
-
-		PropertyMergeCache.TryAdd(key, canonicalName);
-		return canonicalName;
+		return string.IsNullOrEmpty(canonicalName) ? key : canonicalName;
 	}
 
 	private static string GetConservativeCanonicalName(string key) =>

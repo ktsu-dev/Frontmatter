@@ -31,7 +31,6 @@ public class SingleCharacterKeyTests
 	public void ClearCaches()
 	{
 		ClearCache(typeof(NameStandardizer), "PropertyNameCache");
-		ClearCache(typeof(PropertyMerger), "PropertyMergeCache");
 	}
 
 	private static void ClearCache(Type type, string fieldName)
