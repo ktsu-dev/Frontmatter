@@ -3,6 +3,7 @@
 namespace ktsu.Frontmatter;
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 /// <summary>
@@ -40,8 +41,13 @@ internal static class PropertyMerger
 		// Group properties by their canonical names and merge values
 		foreach (IGrouping<string, string> group in propertyMappings.GroupBy(x => x.Value, x => x.Key))
 		{
-			string canonicalKey = group.Key;
 			List<string> originalKeys = [.. group];
+
+			// A key with nothing to merge with keeps its own name, so no key is ever renamed onto
+			// another key's name without the two actually being merged.
+			string canonicalKey = originalKeys.Count == 1 && frontmatter.ContainsKey(group.Key) && group.Key != originalKeys[0]
+				? originalKeys[0]
+				: group.Key;
 
 			MergePropertyGroup(frontmatter, mergedFrontmatter, canonicalKey, originalKeys);
 		}
@@ -203,19 +209,9 @@ internal static class PropertyMerger
 		}
 
 		// Look for exact matches after normalization
-		foreach (string existingKey in existingKeys)
+		if (TryFindEquivalenceClassName(key, normalizedKey, existingKeys, out string? className))
 		{
-			if (existingKey == key)
-			{
-				continue;
-			}
-
-			string normalizedExisting = NormalizePropertyName(existingKey);
-			if (string.Equals(normalizedKey, normalizedExisting, StringComparison.OrdinalIgnoreCase))
-			{
-				// If the existing key is a known property, use its canonical name
-				return PropertyMappings.All.TryGetValue(existingKey, out string? knownName) ? knownName : existingKey;
-			}
+			return className;
 		}
 
 		// Look for partial matches
@@ -235,6 +231,13 @@ internal static class PropertyMerger
 			if (normalizedKey.Contains(normalizedExisting2, StringComparison.OrdinalIgnoreCase) ||
 				normalizedExisting2.Contains(normalizedKey, StringComparison.OrdinalIgnoreCase))
 			{
+				// Both keys of a pair must agree on one name, or each would be renamed to the other.
+				string preferred = PreferredName([key, existingKey]);
+				if (preferred == key)
+				{
+					continue;
+				}
+
 				// If the existing key is a known property, use its canonical name
 				return PropertyMappings.All.TryGetValue(existingKey, out string? knownName2) ? knownName2 : existingKey;
 			}
@@ -242,6 +245,46 @@ internal static class PropertyMerger
 
 		return key;
 	}
+
+	/// <summary>
+	/// Finds the one name shared by every key that normalizes the same as <paramref name="key"/>.
+	/// </summary>
+	/// <param name="key">The key to analyze.</param>
+	/// <param name="normalizedKey">The normalized form of <paramref name="key"/>.</param>
+	/// <param name="existingKeys">All existing keys in the frontmatter.</param>
+	/// <param name="className">The name every key in the class maps to.</param>
+	/// <returns>True if at least one other key normalizes the same as <paramref name="key"/>.</returns>
+	private static bool TryFindEquivalenceClassName(string key, string normalizedKey, string[] existingKeys, [NotNullWhen(true)] out string? className)
+	{
+		List<string> equivalenceClass = [key];
+		equivalenceClass.AddRange(existingKeys.Where(existingKey => existingKey != key &&
+			string.Equals(normalizedKey, NormalizePropertyName(existingKey), StringComparison.OrdinalIgnoreCase)));
+
+		if (equivalenceClass.Count == 1)
+		{
+			className = null;
+			return false;
+		}
+
+		// Every key in the class must reach the same name, whichever of them is asking. Mapping each
+		// key to some other key instead sent related to page_related and page_related to related,
+		// which swapped their values rather than merging them.
+		string preferred = PreferredName(equivalenceClass);
+		className = PropertyMappings.All.TryGetValue(preferred, out string? knownName) ? knownName : preferred;
+		return true;
+	}
+
+	/// <summary>
+	/// Picks one name from a set of keys, independently of their order: a known property first,
+	/// then the shortest key, with any tie broken ordinally.
+	/// </summary>
+	/// <param name="keys">The keys to choose between.</param>
+	/// <returns>The preferred key.</returns>
+	private static string PreferredName(IEnumerable<string> keys) => keys
+		.OrderBy(k => PropertyMappings.All.ContainsKey(k) ? 0 : 1)
+		.ThenBy(k => k.Length)
+		.ThenBy(k => k, StringComparer.Ordinal)
+		.First();
 
 	/// <summary>
 	/// Attempts to find a canonical name for a property key using semantic analysis.
@@ -256,6 +299,13 @@ internal static class PropertyMerger
 		if (basicMatch != key)
 		{
 			return basicMatch;
+		}
+
+		// The key is the name its equivalence class merges under, so it must not move elsewhere.
+		string normalizedKey = NormalizePropertyName(key);
+		if (normalizedKey.Length > 0 && TryFindEquivalenceClassName(key, normalizedKey, existingKeys, out _))
+		{
+			return key;
 		}
 
 		// Then try more aggressive matching using word similarity
