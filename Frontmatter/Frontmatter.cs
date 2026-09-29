@@ -78,20 +78,18 @@ public static class Frontmatter
 			return cachedResult;
 		}
 
-		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out string body);
+		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out string body, out bool hasUnreadableBlock);
 
-		if (frontmatterObjects.Count == 0)
+		// A block that could not be parsed would be dropped from the rebuilt header while the body still
+		// starts after it, so the document is left alone rather than losing that block's text.
+		if (frontmatterObjects.Count == 0 || hasUnreadableBlock)
 		{
 			// Cache the original content since no processing was needed
 			ProcessedFrontmatterCache.TryAdd(cacheKey, input);
 			return input;
 		}
 
-		Dictionary<string, object> combinedFrontmatterObject = frontmatterObjects.First();
-		foreach (Dictionary<string, object> frontmatterObject in frontmatterObjects.Skip(1))
-		{
-			combinedFrontmatterObject = CombineFrontmatterObjects(combinedFrontmatterObject, frontmatterObject);
-		}
+		Dictionary<string, object> combinedFrontmatterObject = CombineAllFrontmatterObjects(frontmatterObjects);
 
 		// Apply property merging if enabled
 		if (mergeStrategy != FrontmatterMergeStrategy.None)
@@ -184,18 +182,17 @@ public static class Frontmatter
 
 		if (HasFrontmatter(input))
 		{
-			// Document already has frontmatter, use CombineFrontmatter instead
-			Dictionary<string, object>? existing = ExtractFrontmatter(input);
+			// Every existing block is folded in, since ReplaceFrontmatter keeps only the body after all of them.
+			List<Dictionary<string, object>> existing = ExtractFrontmatterObjects(input, out _, out bool hasUnreadableBlock);
 
 			// Frontmatter that is present but could not be read is left alone rather than overwritten, so a
 			// gap in parsing loses nothing. Only a genuinely empty block is treated as having no properties.
-			if (existing == null
-				&& (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out _) || blocks.Exists(block => !string.IsNullOrWhiteSpace(block))))
+			if (hasUnreadableBlock)
 			{
 				return input;
 			}
 
-			Dictionary<string, object> combined = CombineFrontmatterObjects(existing ?? [], frontmatter);
+			Dictionary<string, object> combined = CombineFrontmatterObjects(CombineAllFrontmatterObjects(existing), frontmatter);
 			return ReplaceFrontmatter(input, combined);
 		}
 
@@ -304,12 +301,27 @@ public static class Frontmatter
 	/// <param name="body">Output parameter that will contain the markdown body without frontmatter.</param>
 	/// <returns>A collection of dictionaries representing each frontmatter section.</returns>
 	/// <exception cref="InvalidOperationException">Thrown when there are too many frontmatter sections in the document.</exception>
-	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body)
+	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body) =>
+		ExtractFrontmatterObjects(input, out body, out _);
+
+	/// <summary>
+	/// Extracts all frontmatter objects from a markdown document, reporting whether any of it could not be read.
+	/// </summary>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <param name="body">Output parameter that will contain the markdown body without frontmatter.</param>
+	/// <param name="hasUnreadableBlock">
+	/// True when the document opens with a frontmatter delimiter but a non-blank block failed to parse, or no
+	/// closed block could be found. Such text is missing from the returned objects but not from the document.
+	/// </param>
+	/// <returns>A collection of dictionaries representing each frontmatter section that parsed.</returns>
+	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body, out bool hasUnreadableBlock)
 	{
 		List<Dictionary<string, object>> frontmatterObjects = [];
+		hasUnreadableBlock = false;
 
 		if (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out body))
 		{
+			hasUnreadableBlock = HasFrontmatter(input);
 			return frontmatterObjects;
 		}
 
@@ -325,9 +337,29 @@ public static class Frontmatter
 			{
 				frontmatterObjects.Add(frontmatterObject);
 			}
+			else
+			{
+				hasUnreadableBlock = true;
+			}
 		}
 
 		return frontmatterObjects;
+	}
+
+	/// <summary>
+	/// Folds frontmatter objects into one, in document order, so an earlier block wins a repeated key.
+	/// </summary>
+	/// <param name="frontmatterObjects">The frontmatter objects to fold.</param>
+	/// <returns>The combined frontmatter, empty when there are no objects.</returns>
+	private static Dictionary<string, object> CombineAllFrontmatterObjects(List<Dictionary<string, object>> frontmatterObjects)
+	{
+		Dictionary<string, object> combined = [];
+		foreach (Dictionary<string, object> frontmatterObject in frontmatterObjects)
+		{
+			combined = CombineFrontmatterObjects(combined, frontmatterObject);
+		}
+
+		return combined;
 	}
 
 	/// <summary>
