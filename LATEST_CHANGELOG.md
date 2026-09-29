@@ -1,7 +1,7 @@
-## v1.3.3-pre.1 (prerelease)
+## v1.3.3 (patch)
 
 Changes since v1.3.2:
 
-- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- [patch] Keep every frontmatter block when adding or combining properties ([@Claude](https://github.com/Claude))
+- Merge keys that normalize alike under one name instead of swapping them [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 
