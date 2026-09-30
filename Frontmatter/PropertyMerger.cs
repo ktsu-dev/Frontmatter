@@ -144,8 +144,9 @@ internal static class PropertyMerger
 			return;
 		}
 
-		// Handle array/list types specially
-		if (firstValue is IList<object> || firstValue is object[])
+		// Handle array/list types specially. A lone list has nothing to merge with, so it keeps its own
+		// key like a scalar does: renaming is NameStandardizer's job, which FrontmatterNaming.AsIs turns off.
+		if (originalKeys.Count > 1 && (firstValue is IList<object> || firstValue is object[]))
 		{
 			MergeArrayValues(source, target, canonicalKey, originalKeys);
 		}
