@@ -27,6 +27,7 @@ public static class YamlSerializer
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.IgnoreUnmatchedProperties()
+		.WithAttemptingUnquotedStringTypeDeserialization()
 		.Build();
 
 	/// <summary>
@@ -35,6 +36,7 @@ public static class YamlSerializer
 	private static readonly ISerializer Serializer = new SerializerBuilder()
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
+		.WithQuotingNecessaryStrings()
 		.Build();
 
 	/// <summary>
@@ -159,7 +161,9 @@ public static class YamlSerializer
 	{
 		return value switch
 		{
-			null => string.Empty,
+			// A null stays null so it is written back as a null rather than as an empty string. The
+			// dictionaries this feeds are typed as non-nullable for compatibility, so the null is forgiven.
+			null => null!,
 			Dictionary<object, object> dict => dict.ToDictionary(
 				kvp => kvp.Key?.ToString() ?? string.Empty,
 				kvp => ConvertValue(kvp.Value)),

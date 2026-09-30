@@ -769,6 +769,6 @@ public class PropertyMergerTests
 
 		Assert.IsNotNull(frontmatter);
 		CollectionAssert.AreEqual(new object[] { "mix", "wait", "mix" }, (System.Collections.ICollection)frontmatter["steps"]);
-		CollectionAssert.AreEqual(new object[] { "1", "1", "2" }, (System.Collections.ICollection)frontmatter["scores"]);
+		CollectionAssert.AreEqual(new long[] { 1, 1, 2 }, ((System.Collections.IEnumerable)frontmatter["scores"]).Cast<object>().Select(score => Convert.ToInt64(score, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
 	}
 }
