@@ -41,8 +41,8 @@ public class ScalarTypeRoundTripTests
 		Assert.AreEqual("1.0", header["version"], result);
 		Assert.AreEqual("01234", header["zip"], result);
 		Assert.AreEqual("null", header["null_str"], result);
-		Assert.IsTrue(header.ContainsKey("empty"), result);
-		Assert.IsNull(header["empty"], result);
+		Assert.IsTrue(header.TryGetValue("empty", out object? emptyValue), result);
+		Assert.IsNull(emptyValue, result);
 		Assert.AreEqual(false, header["draft"], result);
 		Assert.AreEqual(3L, Convert.ToInt64(header["count"], System.Globalization.CultureInfo.InvariantCulture), result);
 		StringAssert.Contains(result, $"draft: false{Nl}");
