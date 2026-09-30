@@ -198,7 +198,7 @@ public static class Frontmatter
 
 		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
 		string nl = Environment.NewLine;
-		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{input.Trim()}{nl}";
+		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{TrimBody(input)}{nl}";
 	}
 
 	/// <summary>
@@ -220,7 +220,7 @@ public static class Frontmatter
 		ExtractFrontmatterObjects(input, out string body);
 		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
 		string nl = Environment.NewLine;
-		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body.Trim()}{nl}";
+		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{TrimBody(body)}{nl}";
 	}
 
 	/// <summary>
@@ -239,7 +239,7 @@ public static class Frontmatter
 		}
 
 		ExtractFrontmatterObjects(input, out string body);
-		return body.Trim() + Environment.NewLine;
+		return TrimBody(body) + Environment.NewLine;
 	}
 
 	/// <summary>
@@ -253,7 +253,7 @@ public static class Frontmatter
 		Ensure.NotNull(input);
 
 		ExtractFrontmatterObjects(input, out string body);
-		return body.Trim();
+		return TrimBody(body);
 	}
 
 	/// <summary>
@@ -486,6 +486,32 @@ public static class Frontmatter
 
 		lines.Add((start, input.Length));
 		return lines;
+	}
+
+	/// <summary>
+	/// Trims a document body for output, dropping the blank lines before its first content line and the
+	/// whitespace after its last. Unlike <see cref="string.Trim()"/>, it keeps the first content line's
+	/// indentation, so a body that opens with an indented code block or nested list content survives.
+	/// </summary>
+	/// <param name="body">The body to trim.</param>
+	/// <returns>The body without leading blank lines or trailing whitespace.</returns>
+	private static string TrimBody(string body)
+	{
+		int start = 0;
+		for (int i = 0; i < body.Length; i++)
+		{
+			char c = body[i];
+			if (c == '\n')
+			{
+				start = i + 1;
+			}
+			else if (!char.IsWhiteSpace(c))
+			{
+				break;
+			}
+		}
+
+		return body[start..].TrimEnd();
 	}
 
 	/// <summary>
