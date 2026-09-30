@@ -125,6 +125,12 @@ internal static class PropertyMerger
 		object firstValue = source[firstKey];
 		if (firstValue == null)
 		{
+			// A null has no type to merge on, so every key keeps its own value rather than being dropped.
+			foreach (string key in originalKeys)
+			{
+				target[key] = source[key];
+			}
+
 			return;
 		}
 
@@ -138,7 +144,7 @@ internal static class PropertyMerger
 			// If types are different, keep all properties separate
 			foreach (string key in originalKeys)
 			{
-				target[key] = source[key] ?? throw new InvalidOperationException($"Value for key {key} is null");
+				target[key] = source[key];
 			}
 
 			return;
