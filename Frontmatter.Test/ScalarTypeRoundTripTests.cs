@@ -43,9 +43,10 @@ public class ScalarTypeRoundTripTests
 		Assert.AreEqual("null", header["null_str"], result);
 		Assert.IsTrue(header.TryGetValue("empty", out object? emptyValue), result);
 		Assert.IsNull(emptyValue, result);
-		Assert.AreEqual(false, header["draft"], result);
+		Assert.IsInstanceOfType<bool>(header["draft"], result);
+		Assert.IsFalse((bool)header["draft"]!, result);
 		Assert.AreEqual(3L, Convert.ToInt64(header["count"], System.Globalization.CultureInfo.InvariantCulture), result);
-		StringAssert.Contains(result, $"draft: false{Nl}");
+		Assert.Contains($"draft: false{Nl}", result);
 	}
 
 	[TestMethod]
@@ -64,7 +65,8 @@ public class ScalarTypeRoundTripTests
 		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter($"---{Nl}draft: false{Nl}label: \"false\"{Nl}---{Nl}body{Nl}");
 
 		Assert.IsNotNull(frontmatter);
-		Assert.AreEqual(false, frontmatter["draft"]);
+		Assert.IsInstanceOfType<bool>(frontmatter["draft"]);
+		Assert.IsFalse((bool)frontmatter["draft"]);
 		Assert.AreEqual("false", frontmatter["label"]);
 	}
 }
