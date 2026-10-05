@@ -15,6 +15,7 @@ public static class Frontmatter
 	/// The delimiter that marks the beginning and end of a frontmatter section.
 	/// </summary>
 	private const string FrontmatterDelimiter = "---";
+	private const string DocumentEndMarker = "...";
 
 	/// <summary>
 	/// The byte order mark a document may begin with when it was decoded without stripping it.
@@ -368,7 +369,9 @@ public static class Frontmatter
 	/// <remarks>
 	/// Delimiters are recognised only as whole lines, so a <c>---</c> inside a value or a markdown
 	/// horizontal rule in the body is never mistaken for one. The first line opens a block, which closes
-	/// at the next delimiter line, including one at the very end of the document. Further blocks are
+	/// at the next delimiter line, including one at the very end of the document. YAML's document end
+	/// marker <c>...</c>, which Pandoc metadata blocks use, also closes a block but never opens one; a
+	/// rewritten document always closes its frontmatter with <c>---</c>. Further blocks are
 	/// consumed only while each opens on the line straight after the previous one closed and holds
 	/// frontmatter rather than body text (see <see cref="IsFollowOnBlock"/>); the body is everything after
 	/// the last block consumed.
@@ -390,12 +393,13 @@ public static class Frontmatter
 		List<(int Start, int End)> lines = SplitLines(input);
 		lines[0] = (OpeningLineStart(input), lines[0].End);
 		bool IsDelimiterAt(int index) => IsDelimiterLine(input[lines[index].Start..lines[index].End]);
+		bool IsCloserAt(int index) => IsClosingDelimiterLine(input[lines[index].Start..lines[index].End]);
 
 		int next = 0;
 		while (next < lines.Count && IsDelimiterAt(next))
 		{
 			int close = next + 1;
-			while (close < lines.Count && !IsDelimiterAt(close))
+			while (close < lines.Count && !IsCloserAt(close))
 			{
 				close++;
 			}
@@ -520,6 +524,15 @@ public static class Frontmatter
 	/// <param name="line">The line to check, without its line ending.</param>
 	/// <returns>True if the line is a frontmatter delimiter, false otherwise.</returns>
 	private static bool IsDelimiterLine(string line) => line.TrimEnd() == FrontmatterDelimiter;
+
+	/// <summary>
+	/// Checks whether a line can close a frontmatter block: a delimiter, or YAML's document end marker
+	/// <c>...</c>, either allowing trailing whitespace.
+	/// </summary>
+	/// <param name="line">The line to check, without its line ending.</param>
+	/// <returns>True if the line closes a frontmatter block, false otherwise.</returns>
+	private static bool IsClosingDelimiterLine(string line) =>
+		IsDelimiterLine(line) || line.TrimEnd() == DocumentEndMarker;
 
 	/// <summary>
 	/// Combines two frontmatter dictionaries into a single dictionary.
