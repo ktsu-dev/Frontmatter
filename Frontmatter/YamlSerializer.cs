@@ -22,6 +22,12 @@ public static class YamlSerializer
 	private static readonly ConcurrentDictionary<string, Dictionary<string, object>> ParsedYamlCache = new(StringComparer.Ordinal);
 
 	/// <summary>
+	/// The most values one block may expand to once its aliases are resolved. Frontmatter is a few dozen
+	/// values; the limit only stops nested aliases from expanding exponentially.
+	/// </summary>
+	internal const int MaxExpandedValues = 100_000;
+
+	/// <summary>
 	/// Reusable deserializer instance
 	/// </summary>
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
@@ -78,6 +84,7 @@ public static class YamlSerializer
 			}
 
 			result = [];
+			ConversionState state = new();
 
 			// Convert dictionary keys to strings and preserve the first occurrence of duplicate keys
 			foreach (KeyValuePair<object, object> pair in rawData)
@@ -89,7 +96,7 @@ public static class YamlSerializer
 					if (!result.ContainsKey(key))
 					{
 						// Convert the value to ensure proper type handling
-						result[key] = ConvertValue(pair.Value);
+						result[key] = ConvertValue(pair.Value, state);
 					}
 				}
 			}
@@ -157,19 +164,65 @@ public static class YamlSerializer
 	/// <summary>
 	/// Converts a deserialized value to the appropriate type.
 	/// </summary>
-	private static object ConvertValue(object? value)
+	/// <remarks>
+	/// YamlDotNet resolves every alias to the same object as its anchor, so an alias inside its own anchor
+	/// makes a cyclic graph and nested aliases make a graph far larger than its text. Copying either one
+	/// recursively would overflow the stack, which cannot be caught, or exhaust memory, so both are
+	/// rejected with an <see cref="InvalidOperationException"/> that reports the block as unreadable.
+	/// </remarks>
+	private static object ConvertValue(object? value, ConversionState state)
 	{
-		return value switch
+		if (++state.ValueCount > MaxExpandedValues)
+		{
+			throw new InvalidOperationException($"The YAML expands to more than {MaxExpandedValues} values.");
+		}
+
+		if (value is not System.Collections.IEnumerable or string)
 		{
 			// A null stays null so it is written back as a null rather than as an empty string. The
 			// dictionaries this feeds are typed as non-nullable for compatibility, so the null is forgiven.
-			null => null!,
+			return value!;
+		}
+
+		if (!state.Ancestors.Add(value))
+		{
+			throw new InvalidOperationException("The YAML contains an alias that refers to itself.");
+		}
+
+		object converted = value switch
+		{
 			Dictionary<object, object> dict => dict.ToDictionary(
 				kvp => kvp.Key?.ToString() ?? string.Empty,
-				kvp => ConvertValue(kvp.Value)),
-			List<object> list => list.Select(ConvertValue).ToList(),
-			System.Collections.IList list => list.Cast<object>().Select(ConvertValue).ToList(),
+				kvp => ConvertValue(kvp.Value, state)),
+			List<object> list => list.Select(item => ConvertValue(item, state)).ToList(),
+			System.Collections.IList list => list.Cast<object>().Select(item => ConvertValue(item, state)).ToList(),
 			_ => value
 		};
+
+		state.Ancestors.Remove(value);
+		return converted;
+	}
+
+	/// <summary>
+	/// Tracks one block's conversion: the containers on the path being converted, to find a cycle, and
+	/// the number of values converted so far, to bound alias expansion.
+	/// </summary>
+	private sealed class ConversionState
+	{
+		public HashSet<object> Ancestors { get; } = new(ReferenceComparer.Instance);
+
+		public int ValueCount { get; set; }
+	}
+
+	/// <summary>
+	/// Compares objects by reference. ReferenceEqualityComparer is not available on .NET Standard.
+	/// </summary>
+	private sealed class ReferenceComparer : IEqualityComparer<object>
+	{
+		public static ReferenceComparer Instance { get; } = new();
+
+		public new bool Equals(object? x, object? y) => ReferenceEquals(x, y);
+
+		public int GetHashCode(object obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
 	}
 }
