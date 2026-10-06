@@ -144,12 +144,28 @@ public static class Frontmatter
 	/// Checks if a markdown document contains frontmatter.
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
+	/// <remarks>
+	/// Only a closed block counts. A document that opens with a <c>---</c> line that never closes, such as
+	/// a markdown thematic break, has no frontmatter, so <see cref="AddFrontmatter"/> writes a header in front
+	/// of it instead of leaving it alone.
+	/// </remarks>
 	/// <returns>True if the document contains frontmatter, false otherwise.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static bool HasFrontmatter(string input)
 	{
 		Ensure.NotNull(input);
 
+		return TrySplitFrontmatterBlocks(input, out _, out _);
+	}
+
+	/// <summary>
+	/// Checks whether the first line of a document is a frontmatter delimiter, whether or not a closing
+	/// delimiter follows it.
+	/// </summary>
+	/// <param name="input">The document to inspect.</param>
+	/// <returns>True if the document's first line is a delimiter, false otherwise.</returns>
+	private static bool OpensWithDelimiter(string input)
+	{
 		// The opening delimiter follows the same rule as the closing one, so trailing whitespace an editor
 		// left behind does not hide the header. A leading byte order mark is skipped, since callers that
 		// decode bytes or streams themselves keep it where File.ReadAllText would strip it.
@@ -311,8 +327,9 @@ public static class Frontmatter
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <param name="body">Output parameter that will contain the markdown body without frontmatter.</param>
 	/// <param name="hasUnreadableBlock">
-	/// True when the document opens with a frontmatter delimiter but a non-blank block failed to parse, or no
-	/// closed block could be found. Such text is missing from the returned objects but not from the document.
+	/// True when a non-blank frontmatter block failed to parse. Such text is missing from the returned objects
+	/// but not from the document. An opening delimiter that never closes is not frontmatter, so it is not
+	/// reported here.
 	/// </param>
 	/// <returns>A collection of dictionaries representing each frontmatter section that parsed.</returns>
 	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body, out bool hasUnreadableBlock)
@@ -322,7 +339,6 @@ public static class Frontmatter
 
 		if (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out body))
 		{
-			hasUnreadableBlock = HasFrontmatter(input);
 			return frontmatterObjects;
 		}
 
@@ -385,7 +401,7 @@ public static class Frontmatter
 		blocks = [];
 		body = input;
 
-		if (!HasFrontmatter(input))
+		if (!OpensWithDelimiter(input))
 		{
 			return false;
 		}
