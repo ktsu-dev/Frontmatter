@@ -18,7 +18,7 @@ This is a .NET library for processing YAML frontmatter in markdown files. The li
 - `CombineFrontmatter()` - Merges multiple frontmatter sections into one
 - `ExtractFrontmatter()` / `ExtractBody()` - Parse frontmatter and content separately
 - `AddFrontmatter()` / `ReplaceFrontmatter()` / `RemoveFrontmatter()` - Modify documents
-- Uses `ConcurrentDictionary` caching with FNV-1a hashing for performance
+- Caches processed documents, parsed blocks and property names in bounded `BoundedCache` instances, which empty themselves once full
 
 **Processing Pipeline** (used by `CombineFrontmatter`):
 1. **PropertyMerger** - Merges similar properties based on `FrontmatterMergeStrategy` (None/Conservative/Aggressive/Maximum)

@@ -2,7 +2,6 @@
 
 namespace ktsu.Frontmatter;
 
-using System.Collections.Concurrent;
 using System.Linq;
 
 /// <summary>
@@ -11,9 +10,10 @@ using System.Linq;
 internal static class NameStandardizer
 {
 	/// <summary>
-	/// Cache for fuzzy matched property names
+	/// Cache for fuzzy matched property names, bounded so a host that sees many distinct keys does not
+	/// keep them all.
 	/// </summary>
-	private static readonly ConcurrentDictionary<string, string> PropertyNameCache = new();
+	internal static readonly BoundedCache<string, string> PropertyNameCache = new(capacity: 4096);
 
 	/// <summary>
 	/// Standardizes frontmatter property names by mapping non-standard names to standard ones using fuzzy matching.
@@ -67,7 +67,7 @@ internal static class NameStandardizer
 			?? FindStandardPropertyMatch(NormalizePropertyName(key), standardProperties)
 			?? key;
 
-		PropertyNameCache.TryAdd(key, standardName);
+		PropertyNameCache.Add(key, standardName);
 		return standardName;
 	}
 

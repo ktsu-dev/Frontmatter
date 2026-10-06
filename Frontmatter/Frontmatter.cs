@@ -3,7 +3,6 @@
 namespace ktsu.Frontmatter;
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
@@ -26,9 +25,10 @@ public static class Frontmatter
 	/// <summary>
 	/// Cache for processed frontmatter to avoid repeated processing of identical content.
 	/// Keyed by the document text together with the option flags it was processed under, so a cache
-	/// hit means the input really is identical rather than merely hashing alike.
+	/// hit means the input really is identical rather than merely hashing alike. It holds whole documents,
+	/// so it is bounded to keep a long-running host from holding every document it has processed.
 	/// </summary>
-	private static readonly ConcurrentDictionary<(string Content, uint Options), string> ProcessedFrontmatterCache = new();
+	internal static readonly BoundedCache<(string Content, uint Options), string> ProcessedFrontmatterCache = new(capacity: 256);
 
 	/// <summary>
 	/// Combines multiple frontmatter sections in a markdown document into a single frontmatter section.
@@ -87,7 +87,7 @@ public static class Frontmatter
 		if (frontmatterObjects.Count == 0 || hasUnreadableBlock)
 		{
 			// Cache the original content since no processing was needed
-			ProcessedFrontmatterCache.TryAdd(cacheKey, input);
+			ProcessedFrontmatterCache.Add(cacheKey, input);
 			return input;
 		}
 
@@ -117,7 +117,7 @@ public static class Frontmatter
 		string result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
 
 		// Cache the processed result
-		ProcessedFrontmatterCache.TryAdd(cacheKey, result);
+		ProcessedFrontmatterCache.Add(cacheKey, result);
 
 		return result;
 	}
