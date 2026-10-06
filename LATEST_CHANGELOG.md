@@ -1,8 +1,7 @@
-## v1.4.2 (patch)
+## v1.4.3 (patch)
 
-Changes since v1.4.1:
+Changes since v1.4.2:
 
-- Write a rewritten document's header in the document's own line endings [patch] ([@Claude](https://github.com/Claude))
-- Count only a closed block as frontmatter, so AddFrontmatter writes a header above an opening rule [patch] ([@Claude](https://github.com/Claude))
-- Drop a leading byte order mark when adding frontmatter to a document [patch] ([@Claude](https://github.com/Claude))
+- Bound the process-wide caches so long-running hosts stop growing [patch] ([@Claude](https://github.com/Claude))
+- Report a block whose aliases form a cycle or expand too far as unreadable [patch] ([@Claude](https://github.com/Claude))
 
