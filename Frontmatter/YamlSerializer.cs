@@ -2,7 +2,6 @@
 
 namespace ktsu.Frontmatter;
 
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 using YamlDotNet.Core;
@@ -17,9 +16,10 @@ public static class YamlSerializer
 	/// <summary>
 	/// Cache for parsed YAML to avoid repeated parsing.
 	/// Keyed by the YAML text itself, compared ordinally, so a cache hit means the input really is
-	/// identical rather than merely hashing alike.
+	/// identical rather than merely hashing alike. It is bounded so a long-running host does not keep every
+	/// block it has parsed.
 	/// </summary>
-	private static readonly ConcurrentDictionary<string, Dictionary<string, object>> ParsedYamlCache = new(StringComparer.Ordinal);
+	internal static readonly BoundedCache<string, Dictionary<string, object>> ParsedYamlCache = new(capacity: 1024, StringComparer.Ordinal);
 
 	/// <summary>
 	/// The most values one block may expand to once its aliases are resolved. Frontmatter is a few dozen
@@ -111,7 +111,7 @@ public static class YamlSerializer
 					cacheResult[pair.Key] = DeepCloneValue(pair.Value);
 				}
 
-				ParsedYamlCache.TryAdd(input, cacheResult);
+				ParsedYamlCache.Add(input, cacheResult);
 				return true;
 			}
 		}
