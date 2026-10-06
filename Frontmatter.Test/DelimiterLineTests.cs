@@ -185,6 +185,27 @@ public class DelimiterLineTests
 	}
 
 	[TestMethod]
+	public void AddFrontmatter_BomPrefixedDocumentWithoutHeader_LeavesNoBomInTheBody()
+	{
+		string input = $"﻿# Heading{Nl}{Nl}text{Nl}";
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["title"] = "T" });
+
+		Assert.AreEqual($"---{Nl}title: T{Nl}---{Nl}# Heading{Nl}{Nl}text{Nl}", result);
+		Assert.AreEqual($"# Heading{Nl}{Nl}text", Frontmatter.ExtractBody(result));
+	}
+
+	[TestMethod]
+	public void AddFrontmatter_BomPrefixedDocumentOpeningWithBlankLines_LeavesNoBomInTheBody()
+	{
+		string input = $"﻿{Nl}{Nl}# Heading{Nl}";
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["title"] = "T" });
+
+		Assert.AreEqual($"---{Nl}title: T{Nl}---{Nl}# Heading{Nl}", result);
+	}
+
+	[TestMethod]
 	public void HasFrontmatter_DelimiterWithoutLineEnding_IsNotFrontmatter()
 	{
 		Assert.IsFalse(Frontmatter.HasFrontmatter("--- "));

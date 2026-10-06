@@ -496,13 +496,15 @@ public static class Frontmatter
 	/// Trims a document body for output, dropping the blank lines before its first content line and the
 	/// whitespace after its last. Unlike <see cref="string.Trim()"/>, it keeps the first content line's
 	/// indentation, so a body that opens with an indented code block or nested list content survives.
+	/// A leading byte order mark is dropped too: it is not whitespace, so it would otherwise be carried
+	/// past a newly written header and hide the first line from markdown renderers.
 	/// </summary>
 	/// <param name="body">The body to trim.</param>
-	/// <returns>The body without leading blank lines or trailing whitespace.</returns>
+	/// <returns>The body without a byte order mark, leading blank lines or trailing whitespace.</returns>
 	private static string TrimBody(string body)
 	{
-		int start = 0;
-		for (int i = 0; i < body.Length; i++)
+		int start = OpeningLineStart(body);
+		for (int i = start; i < body.Length; i++)
 		{
 			char c = body[i];
 			if (c == '\n')
