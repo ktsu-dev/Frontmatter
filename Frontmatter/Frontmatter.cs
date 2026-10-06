@@ -5,6 +5,7 @@ namespace ktsu.Frontmatter;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Text;
 
 /// <summary>
 /// Provides methods for processing and manipulating YAML frontmatter in markdown files.
@@ -110,9 +111,9 @@ public static class Frontmatter
 			combinedFrontmatterObject = SortFrontmatterProperties(combinedFrontmatterObject);
 		}
 
-		string combinedFrontmatter = YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim();
+		string nl = NewLineOf(input);
+		string combinedFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim(), nl);
 
-		string nl = Environment.NewLine;
 		string result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
 
 		// Cache the processed result
@@ -213,8 +214,8 @@ public static class Frontmatter
 			return ReplaceFrontmatter(input, combined);
 		}
 
-		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
-		string nl = Environment.NewLine;
+		string nl = NewLineOf(input);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
 		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{TrimBody(input)}{nl}";
 	}
 
@@ -235,8 +236,8 @@ public static class Frontmatter
 		}
 
 		ExtractFrontmatterObjects(input, out string body);
-		string yamlFrontmatter = YamlSerializer.SerializeYamlObject(frontmatter).Trim();
-		string nl = Environment.NewLine;
+		string nl = NewLineOf(input);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
 		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{TrimBody(body)}{nl}";
 	}
 
@@ -256,7 +257,7 @@ public static class Frontmatter
 		}
 
 		ExtractFrontmatterObjects(input, out string body);
-		return TrimBody(body) + Environment.NewLine;
+		return TrimBody(body) + NewLineOf(input);
 	}
 
 	/// <summary>
@@ -551,6 +552,53 @@ public static class Frontmatter
 	/// <returns>True if the line closes a frontmatter block, false otherwise.</returns>
 	private static bool IsClosingDelimiterLine(string line) =>
 		IsDelimiterLine(line) || line.TrimEnd() == DocumentEndMarker;
+
+	/// <summary>
+	/// Finds the line ending a document uses, so a rewritten document keeps it rather than mixing in the
+	/// host's.
+	/// </summary>
+	/// <param name="input">The document to inspect.</param>
+	/// <returns>
+	/// The document's first line ending, CRLF, LF or CR, or <see cref="Environment.NewLine"/> when it has none.
+	/// </returns>
+	private static string NewLineOf(string input)
+	{
+		int index = input.IndexOfAny(['\r', '\n']);
+		if (index < 0)
+		{
+			return Environment.NewLine;
+		}
+
+		if (input[index] == '\n')
+		{
+			return "\n";
+		}
+
+		return index + 1 < input.Length && input[index + 1] == '\n' ? "\r\n" : "\r";
+	}
+
+	/// <summary>
+	/// Rewrites every line ending in a piece of text to the given one.
+	/// </summary>
+	/// <param name="text">The text to rewrite, such as serialized YAML.</param>
+	/// <param name="newLine">The line ending to use.</param>
+	/// <returns>The text with only <paramref name="newLine"/> line endings.</returns>
+	private static string WithNewLines(string text, string newLine)
+	{
+		List<(int Start, int End)> lines = SplitLines(text);
+		StringBuilder builder = new(text.Length);
+		for (int i = 0; i < lines.Count; i++)
+		{
+			if (i > 0)
+			{
+				builder.Append(newLine);
+			}
+
+			builder.Append(text, lines[i].Start, lines[i].End - lines[i].Start);
+		}
+
+		return builder.ToString();
+	}
 
 	/// <summary>
 	/// Combines two frontmatter dictionaries into a single dictionary.
