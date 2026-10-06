@@ -191,4 +191,75 @@ public class DelimiterLineTests
 		Assert.IsFalse(Frontmatter.HasFrontmatter("\uFEFF"));
 		Assert.IsFalse(Frontmatter.HasFrontmatter(string.Empty));
 	}
+
+	private static readonly string PandocDocument =
+		$"---{Nl}title: A{Nl}...{Nl}# Heading{Nl}{Nl}Important paragraph.{Nl}{Nl}---{Nl}{Nl}More text{Nl}";
+
+	[TestMethod]
+	public void ExtractFrontmatter_BlockClosedByDocumentEndMarker_ReadsTheBlock()
+	{
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(PandocDocument);
+
+		Assert.IsNotNull(frontmatter);
+		Assert.HasCount(1, frontmatter);
+		Assert.AreEqual("A", frontmatter["title"]);
+	}
+
+	[TestMethod]
+	public void ExtractBody_BlockClosedByDocumentEndMarker_KeepsTheBodyBeforeALaterRule()
+	{
+		string body = Frontmatter.ExtractBody(PandocDocument);
+
+		Assert.AreEqual($"# Heading{Nl}{Nl}Important paragraph.{Nl}{Nl}---{Nl}{Nl}More text", body);
+	}
+
+	[TestMethod]
+	public void RemoveFrontmatter_BlockClosedByDocumentEndMarker_KeepsTheBodyBeforeALaterRule()
+	{
+		string result = Frontmatter.RemoveFrontmatter(PandocDocument);
+
+		Assert.AreEqual($"# Heading{Nl}{Nl}Important paragraph.{Nl}{Nl}---{Nl}{Nl}More text{Nl}", result);
+	}
+
+	[TestMethod]
+	public void ReplaceFrontmatter_BlockClosedByDocumentEndMarker_ReplacesOnlyTheBlock()
+	{
+		string result = Frontmatter.ReplaceFrontmatter(PandocDocument, new() { { "title", "B" } });
+
+		Assert.AreEqual($"---{Nl}title: B{Nl}---{Nl}# Heading{Nl}{Nl}Important paragraph.{Nl}{Nl}---{Nl}{Nl}More text{Nl}", result);
+	}
+
+	[TestMethod]
+	public void ExtractFrontmatter_BlockClosedByDocumentEndMarkerWithNoLaterRule_ReadsTheBlock()
+	{
+		string input = $"---{Nl}title: A{Nl}...   {Nl}Body{Nl}";
+
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(input);
+
+		Assert.IsNotNull(frontmatter);
+		Assert.AreEqual("A", frontmatter["title"]);
+		Assert.AreEqual("Body", Frontmatter.ExtractBody(input));
+	}
+
+	[TestMethod]
+	public void ExtractFrontmatter_DocumentEndMarkerOnTheFirstLine_IsNotAnOpener()
+	{
+		string input = $"...{Nl}title: A{Nl}---{Nl}Body{Nl}";
+
+		Assert.IsFalse(Frontmatter.HasFrontmatter(input));
+		Assert.IsNull(Frontmatter.ExtractFrontmatter(input));
+		Assert.AreEqual(input, Frontmatter.RemoveFrontmatter(input));
+	}
+
+	[TestMethod]
+	public void ExtractFrontmatter_IndentedDocumentEndMarkerInsideAValue_DoesNotCloseTheBlock()
+	{
+		string input = $"---{Nl}notes: |{Nl}  ...{Nl}title: A{Nl}---{Nl}Body{Nl}";
+
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(input);
+
+		Assert.IsNotNull(frontmatter);
+		Assert.AreEqual("A", frontmatter["title"]);
+		Assert.AreEqual("Body", Frontmatter.ExtractBody(input));
+	}
 }
