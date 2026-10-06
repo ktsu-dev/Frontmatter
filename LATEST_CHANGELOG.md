@@ -1,6 +1,6 @@
-## v1.4.1-pre.2 (prerelease)
+## v1.4.1 (patch)
 
-Changes since v1.4.1-pre.1:
+Changes since v1.4.0:
 
-- Bump Polyfill from 11.4.1 to 11.4.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Close a frontmatter block at YAML's `...` document end marker [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 
