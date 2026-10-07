@@ -524,7 +524,7 @@ public static class Frontmatter
 		for (int i = start; i < body.Length; i++)
 		{
 			char c = body[i];
-			if (c == '\n')
+			if (c is '\n' or '\r')
 			{
 				start = i + 1;
 			}
