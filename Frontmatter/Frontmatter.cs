@@ -216,7 +216,7 @@ public static class Frontmatter
 
 		string nl = NewLineOf(input);
 		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
-		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{TrimBody(input)}{nl}";
+		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{BodySection(input, nl)}";
 	}
 
 	/// <summary>
@@ -238,7 +238,7 @@ public static class Frontmatter
 		ExtractFrontmatterObjects(input, out string body);
 		string nl = NewLineOf(input);
 		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
-		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{TrimBody(body)}{nl}";
+		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{BodySection(body, nl)}";
 	}
 
 	/// <summary>
@@ -257,7 +257,7 @@ public static class Frontmatter
 		}
 
 		ExtractFrontmatterObjects(input, out string body);
-		return TrimBody(body) + NewLineOf(input);
+		return BodySection(body, NewLineOf(input));
 	}
 
 	/// <summary>
@@ -535,6 +535,19 @@ public static class Frontmatter
 		}
 
 		return body[start..].TrimEnd();
+	}
+
+	/// <summary>
+	/// Formats a document body for output after a header: the trimmed body followed by a line ending, or
+	/// nothing at all when the body is empty, so a header-only document does not gain a blank line.
+	/// </summary>
+	/// <param name="body">The body to format.</param>
+	/// <param name="newLine">The line ending to end the body with.</param>
+	/// <returns>The trimmed body and its line ending, or an empty string.</returns>
+	private static string BodySection(string body, string newLine)
+	{
+		string trimmed = TrimBody(body);
+		return trimmed.Length == 0 ? string.Empty : trimmed + newLine;
 	}
 
 	/// <summary>
