@@ -1,10 +1,6 @@
-## v1.4.4 (patch)
+## v1.4.5-pre.1 (prerelease)
 
-Changes since v1.4.3:
+Changes since v1.4.4:
 
-- Leave .gitignore as it is on main ([@Claude](https://github.com/Claude))
-- Leave .gitignore as it is on main ([@Claude](https://github.com/Claude))
-- Stop header-only documents gaining a blank line after the header [patch] ([@Claude](https://github.com/Claude))
-- Quote strings that start or end with whitespace when writing YAML [patch] ([@Claude](https://github.com/Claude))
-- Trim blank lines after the header in CR-only documents [patch] ([@Claude](https://github.com/Claude))
+- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
