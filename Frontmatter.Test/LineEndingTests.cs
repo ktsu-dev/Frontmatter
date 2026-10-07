@@ -83,4 +83,39 @@ public class LineEndingTests
 
 		Assert.AreEqual(Lines(nl, "line1", "line2"), result);
 	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	[DataRow("\r", DisplayName = "CR")]
+	public void ExtractBody_DropsBlankLinesAfterTheHeader_ForEveryLineEnding(string nl)
+	{
+		string input = Lines(nl, "---", "title: x", "---", string.Empty, string.Empty, "Body");
+
+		Assert.AreEqual("Body", Frontmatter.ExtractBody(input));
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	[DataRow("\r", DisplayName = "CR")]
+	public void RemoveFrontmatter_DropsBlankLinesAfterTheHeader_ForEveryLineEnding(string nl)
+	{
+		string input = Lines(nl, "---", "title: x", "---", string.Empty, string.Empty, "Body");
+
+		Assert.AreEqual(Lines(nl, "Body"), Frontmatter.RemoveFrontmatter(input));
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	[DataRow("\r", DisplayName = "CR")]
+	public void ReplaceFrontmatter_DropsBlankLinesAfterTheHeader_ForEveryLineEnding(string nl)
+	{
+		string input = Lines(nl, "---", "title: x", "---", string.Empty, string.Empty, "Body");
+
+		string result = Frontmatter.ReplaceFrontmatter(input, new Dictionary<string, object> { ["title"] = "y" });
+
+		Assert.AreEqual(Lines(nl, "---", "title: y", "---", "Body"), result);
+	}
 }
