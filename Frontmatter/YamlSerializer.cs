@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.EventEmitters;
 using YamlDotNet.Serialization.NamingConventions;
 
 /// <summary>
@@ -43,6 +44,7 @@ public static class YamlSerializer
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithQuotingNecessaryStrings()
+		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
 		.Build();
 
 	/// <summary>
@@ -212,6 +214,25 @@ public static class YamlSerializer
 		public HashSet<object> Ancestors { get; } = new(ReferenceComparer.Instance);
 
 		public int ValueCount { get; set; }
+	}
+
+	/// <summary>
+	/// Double-quotes any string that starts or ends with whitespace. YAML strips that whitespace from a
+	/// plain scalar, and <c>WithQuotingNecessaryStrings</c> does not quote a string that ends in a tab, so
+	/// without this the value would come back changed on the next read.
+	/// </summary>
+	private sealed class EdgeWhitespaceQuotingEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
+	{
+		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
+		{
+			if (eventInfo.Source.Value is string { Length: > 0 } text
+				&& (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1])))
+			{
+				eventInfo.Style = ScalarStyle.DoubleQuoted;
+			}
+
+			base.Emit(eventInfo, emitter);
+		}
 	}
 
 	/// <summary>
