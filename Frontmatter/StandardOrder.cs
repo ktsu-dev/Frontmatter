@@ -203,9 +203,13 @@ public static class StandardOrder
 	/// <param name="b">The second property name.</param>
 	/// <returns>
 	/// A negative value if 'a' should appear before 'b',
-	/// zero if they are equal in order,
+	/// zero only if 'a' and 'b' are the same string,
 	/// a positive value if 'a' should appear after 'b'.
 	/// </returns>
+	/// <remarks>
+	/// Names that differ only in case share a position, so they are ordered against each other ordinally.
+	/// That keeps the comparison a total order, so it can back a sorted collection without losing keys.
+	/// </remarks>
 	public static int Compare(string a, string b)
 	{
 		Ensure.NotNull(a);
@@ -216,6 +220,12 @@ public static class StandardOrder
 			return 0;
 		}
 
+		int result = CompareByPosition(a, b);
+		return result != 0 ? result : string.CompareOrdinal(a, b);
+	}
+
+	private static int CompareByPosition(string a, string b)
+	{
 		// Get the indices from the standard property list
 		int indexA = Array.IndexOf(PropertyNames, a.ToLowerInvariant());
 		int indexB = Array.IndexOf(PropertyNames, b.ToLowerInvariant());
