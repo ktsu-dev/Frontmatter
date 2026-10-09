@@ -126,6 +126,10 @@ public static class Frontmatter
 	/// Extracts frontmatter from a markdown document.
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
+	/// <remarks>
+	/// Consecutive frontmatter blocks form one header, so their properties are combined, and the first
+	/// block to define a key wins.
+	/// </remarks>
 	/// <returns>A dictionary containing the frontmatter properties, or null if no frontmatter is found.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static Dictionary<string, object>? ExtractFrontmatter(string input)
@@ -137,8 +141,10 @@ public static class Frontmatter
 			return null;
 		}
 
-		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out _);
-		return frontmatterObjects.Count > 0 ? frontmatterObjects.First() : null;
+		// Stacked blocks are one header, as AddFrontmatter and ExtractBody treat them, so fold them all
+		// and let an earlier block win a repeated key.
+		Dictionary<string, object> frontmatter = CombineAllFrontmatterObjects(ExtractFrontmatterObjects(input, out _));
+		return frontmatter.Count > 0 ? frontmatter : null;
 	}
 
 	/// <summary>

@@ -41,6 +41,31 @@ public class StackedBlockPreservationTests
 		Assert.AreEqual("First", frontmatter["title"]);
 	}
 
+	[TestMethod]
+	public void ExtractFrontmatter_TwoStackedBlocks_ReturnsPropertiesFromEveryBlock()
+	{
+		const string input = "---\ntitle: Hello\n---\n---\nauthor: Jane\n---\n# Body\n";
+
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(input);
+
+		Assert.IsNotNull(frontmatter);
+		Assert.AreEqual("Hello", frontmatter["title"]);
+		Assert.AreEqual("Jane", frontmatter["author"], "The second block is header to ExtractBody, so ExtractFrontmatter must return it");
+		Assert.AreEqual("# Body", Frontmatter.ExtractBody(input));
+	}
+
+	[TestMethod]
+	public void ExtractFrontmatter_StackedBlocksRepeatAKey_FirstBlockWins()
+	{
+		const string input = "---\ntitle: First\n---\n---\ntitle: Second\nauthor: Jane\n---\nbody\n";
+
+		Dictionary<string, object>? frontmatter = Frontmatter.ExtractFrontmatter(input);
+
+		Assert.IsNotNull(frontmatter);
+		Assert.AreEqual("First", frontmatter["title"]);
+		Assert.AreEqual("Jane", frontmatter["author"]);
+	}
+
 	// The first block is always read as frontmatter, so an unparseable first block followed by one that
 	// parses is the case where the unreadable text sits in the header rather than the body.
 	private const string UnreadableFirstBlock = "---\nkey: [unclosed\n---\n---\ntitle: T\n---\nbody\n";
