@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="ktsu.Extensions" Version="1.9.2" />
+    <PackageVersion Include="ktsu.Extensions" Version="1.9.3" />
     <PackageVersion Include="ktsu.FuzzySearch" Version="1.4.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="1.7.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.Fakes" Version="17.14.1" />
