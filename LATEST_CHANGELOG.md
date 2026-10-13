@@ -1,7 +1,7 @@
-## v1.4.5 (patch)
+## v1.4.6-pre.1 (prerelease)
 
-Changes since v1.4.4:
+Changes since v1.4.5:
 
-- Return every stacked block's properties from ExtractFrontmatter [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- Break StandardOrder.Compare ties between case variants ordinally [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Bump Polyfill from 11.4.3 to 11.4.5 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
