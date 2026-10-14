@@ -2,295 +2,295 @@
 
 Changes since v1.4.5:
 
-- Bump Polyfill from 11.4.3 to 11.4.5 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.4.3 to 11.4.5 (dependabot[bot])
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.4.5 (patch)
 
 Changes since v1.4.4:
 
-- Return every stacked block's properties from ExtractFrontmatter [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- Break StandardOrder.Compare ties between case variants ordinally [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Return every stacked block's properties from ExtractFrontmatter [patch] (matt-edmondson)
+- Break StandardOrder.Compare ties between case variants ordinally [patch] (matt-edmondson)
 
 ## v1.4.5-pre.2 (prerelease)
 
 Changes since v1.4.5-pre.1:
 
-- Bump MSTest.Sdk from 4.4.1 to 4.5.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.4.1 to 4.5.1 (dependabot[bot])
 
 ## v1.4.5-pre.1 (prerelease)
 
 Changes since v1.4.4:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.4.4 (patch)
 
 Changes since v1.4.3:
 
-- Leave .gitignore as it is on main ([@Claude](https://github.com/Claude))
-- Leave .gitignore as it is on main ([@Claude](https://github.com/Claude))
-- Stop header-only documents gaining a blank line after the header [patch] ([@Claude](https://github.com/Claude))
-- Quote strings that start or end with whitespace when writing YAML [patch] ([@Claude](https://github.com/Claude))
-- Trim blank lines after the header in CR-only documents [patch] ([@Claude](https://github.com/Claude))
+- Leave .gitignore as it is on main (Claude)
+- Leave .gitignore as it is on main (Claude)
+- Stop header-only documents gaining a blank line after the header [patch] (Claude)
+- Quote strings that start or end with whitespace when writing YAML [patch] (Claude)
+- Trim blank lines after the header in CR-only documents [patch] (Claude)
 
 ## v1.4.3 (patch)
 
 Changes since v1.4.2:
 
-- Bound the process-wide caches so long-running hosts stop growing [patch] ([@Claude](https://github.com/Claude))
-- Report a block whose aliases form a cycle or expand too far as unreadable [patch] ([@Claude](https://github.com/Claude))
+- Bound the process-wide caches so long-running hosts stop growing [patch] (Claude)
+- Report a block whose aliases form a cycle or expand too far as unreadable [patch] (Claude)
 
 ## v1.4.2 (patch)
 
 Changes since v1.4.1:
 
-- Write a rewritten document's header in the document's own line endings [patch] ([@Claude](https://github.com/Claude))
-- Count only a closed block as frontmatter, so AddFrontmatter writes a header above an opening rule [patch] ([@Claude](https://github.com/Claude))
-- Drop a leading byte order mark when adding frontmatter to a document [patch] ([@Claude](https://github.com/Claude))
+- Write a rewritten document's header in the document's own line endings [patch] (Claude)
+- Count only a closed block as frontmatter, so AddFrontmatter writes a header above an opening rule [patch] (Claude)
+- Drop a leading byte order mark when adding frontmatter to a document [patch] (Claude)
 
 ## v1.4.1 (patch)
 
 Changes since v1.4.0:
 
-- Close a frontmatter block at YAML's `...` document end marker [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Close a frontmatter block at YAML's `...` document end marker [patch] (matt-edmondson)
 
 ## v1.4.1-pre.2 (prerelease)
 
 Changes since v1.4.1-pre.1:
 
-- Bump Polyfill from 11.4.1 to 11.4.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.4.1 to 11.4.2 (dependabot[bot])
 
 ## v1.4.1-pre.1 (prerelease)
 
 Changes since v1.4.0:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.4.0 (minor)
 
 Changes since v1.3.0:
 
-- Assert the boolean round trip with IsFalse and Contains in scalar type tests ([@Claude](https://github.com/Claude))
-- Use TryGetValue instead of ContainsKey plus indexer in scalar round-trip test ([@Claude](https://github.com/Claude))
-- [minor] Keep scalar types and nulls through a frontmatter round trip ([@Claude](https://github.com/Claude))
-- Keep a lone list property's key when merging properties [patch] ([@Claude](https://github.com/Claude))
-- Keep the first body line's indentation when rewriting a document [patch] ([@Claude](https://github.com/Claude))
-- Move CI onto the shared ci-shared.yml pipeline ([@Claude](https://github.com/Claude))
-- [patch] Keep every frontmatter block when adding or combining properties ([@Claude](https://github.com/Claude))
-- Merge keys that normalize alike under one name instead of swapping them [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- Use TryGetValue instead of ContainsKey plus indexer in collision test ([@matt-edmondson](https://github.com/matt-edmondson))
-- Use TryGetValue instead of ContainsKey plus indexer in merge-isolation tests ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Keep both values when two keys standardize to the same name ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Stop the merge-strategy cache letting one call decide a key for every later call ([@matt-edmondson](https://github.com/matt-edmondson))
-- Merge remote-tracking branch 'origin/main' into fix/rule-under-header-stays-in-body ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Treat a frontmatter block with no YAML content as unreadable instead of throwing ([@Claude](https://github.com/Claude))
-- [patch] Keep a thematic break directly under the header in the body ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Keep repeated items within a list when merging properties ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Recognise an opening delimiter with trailing whitespace or a leading BOM ([@matt-edmondson](https://github.com/matt-edmondson))
+- Assert the boolean round trip with IsFalse and Contains in scalar type tests (Claude)
+- Use TryGetValue instead of ContainsKey plus indexer in scalar round-trip test (Claude)
+- [minor] Keep scalar types and nulls through a frontmatter round trip (Claude)
+- Keep a lone list property's key when merging properties [patch] (Claude)
+- Keep the first body line's indentation when rewriting a document [patch] (Claude)
+- Move CI onto the shared ci-shared.yml pipeline (Claude)
+- [patch] Keep every frontmatter block when adding or combining properties (Claude)
+- Merge keys that normalize alike under one name instead of swapping them [patch] (matt-edmondson)
+- Use TryGetValue instead of ContainsKey plus indexer in collision test (matt-edmondson)
+- Use TryGetValue instead of ContainsKey plus indexer in merge-isolation tests (matt-edmondson)
+- [patch] Keep both values when two keys standardize to the same name (matt-edmondson)
+- [patch] Stop the merge-strategy cache letting one call decide a key for every later call (matt-edmondson)
+- Merge remote-tracking branch 'origin/main' into fix/rule-under-header-stays-in-body (matt-edmondson)
+- [patch] Treat a frontmatter block with no YAML content as unreadable instead of throwing (Claude)
+- [patch] Keep a thematic break directly under the header in the body (matt-edmondson)
+- [patch] Keep repeated items within a list when merging properties (matt-edmondson)
+- [patch] Recognise an opening delimiter with trailing whitespace or a leading BOM (matt-edmondson)
 
 ## v1.3.4 (patch)
 
 Changes since v1.3.3:
 
-- Move CI onto the shared ci-shared.yml pipeline ([@Claude](https://github.com/Claude))
+- Move CI onto the shared ci-shared.yml pipeline (Claude)
 
 ## v1.3.3 (patch)
 
 Changes since v1.3.2:
 
-- [patch] Keep every frontmatter block when adding or combining properties ([@Claude](https://github.com/Claude))
-- Merge keys that normalize alike under one name instead of swapping them [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- [patch] Keep every frontmatter block when adding or combining properties (Claude)
+- Merge keys that normalize alike under one name instead of swapping them [patch] (matt-edmondson)
 
 ## v1.3.3-pre.1 (prerelease)
 
 Changes since v1.3.2:
 
-- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.4.0 to 11.4.1 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.3.2 (patch)
 
 Changes since v1.3.1:
 
-- Use TryGetValue instead of ContainsKey plus indexer in collision test ([@matt-edmondson](https://github.com/matt-edmondson))
-- Use TryGetValue instead of ContainsKey plus indexer in merge-isolation tests ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Keep both values when two keys standardize to the same name ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Stop the merge-strategy cache letting one call decide a key for every later call ([@matt-edmondson](https://github.com/matt-edmondson))
-- Merge remote-tracking branch 'origin/main' into fix/rule-under-header-stays-in-body ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Keep a thematic break directly under the header in the body ([@matt-edmondson](https://github.com/matt-edmondson))
+- Use TryGetValue instead of ContainsKey plus indexer in collision test (matt-edmondson)
+- Use TryGetValue instead of ContainsKey plus indexer in merge-isolation tests (matt-edmondson)
+- [patch] Keep both values when two keys standardize to the same name (matt-edmondson)
+- [patch] Stop the merge-strategy cache letting one call decide a key for every later call (matt-edmondson)
+- Merge remote-tracking branch 'origin/main' into fix/rule-under-header-stays-in-body (matt-edmondson)
+- [patch] Keep a thematic break directly under the header in the body (matt-edmondson)
 
 ## v1.3.1 (patch)
 
 Changes since v1.3.0:
 
-- [patch] Treat a frontmatter block with no YAML content as unreadable instead of throwing ([@Claude](https://github.com/Claude))
-- [patch] Keep repeated items within a list when merging properties ([@matt-edmondson](https://github.com/matt-edmondson))
-- [patch] Recognise an opening delimiter with trailing whitespace or a leading BOM ([@matt-edmondson](https://github.com/matt-edmondson))
+- [patch] Treat a frontmatter block with no YAML content as unreadable instead of throwing (Claude)
+- [patch] Keep repeated items within a list when merging properties (matt-edmondson)
+- [patch] Recognise an opening delimiter with trailing whitespace or a leading BOM (matt-edmondson)
 
 ## v1.3.0 (minor)
 
 Changes since v1.2.0:
 
-- Recognise frontmatter delimiters only as whole lines at the top of a document ([@Claude](https://github.com/Claude))
-- [patch] Stop a single-character key being containment-matched onto unrelated properties ([@Claude](https://github.com/Claude))
-- Key the content caches by their input, not a 32-bit hash ([@Claude](https://github.com/Claude))
-- [patch] Clear the five SonarCloud findings on the new code ([@Claude](https://github.com/Claude))
-- [patch] Fold the two NormalizePropertyName helpers and stop decoration-only keys being renamed ([@Claude](https://github.com/Claude))
-- Throw rather than assert on the nullable in the test helper ([@Claude](https://github.com/Claude))
-- [patch] Rank standardized property names by fuzzy similarity ([@Claude](https://github.com/Claude))
-- Gate Dependabot auto-merge on CI actually being green ([@Claude](https://github.com/Claude))
-- ci: adopt the consolidated .NET workflow [patch] ([@Claude](https://github.com/Claude))
-- fix: parse frontmatter by the document's line endings, not the host's [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: make the SonarQube quality gate opt in [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: adopt the unified dotnet workflow [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: store icon.png in LFS as .gitattributes declares ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: scope build badge to the default branch ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
-- Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
-- Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
-- Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
-- Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
-- chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: remove unused SourceLink package versions ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: remove redundant package version and source link entries ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add TAGS.md with NuGet package tags ([@matt-edmondson](https://github.com/matt-edmondson))
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
-- Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
-- Migrate to dotnet 10 ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update project configuration and scripts for improved build processes ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update configuration files and scripts for improved build and test processes ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove obsolete build configuration files and scripts ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update project SDK references in Frontmatter and Frontmatter.Test ([@matt-edmondson](https://github.com/matt-edmondson))
-- Enhance Frontmatter validation and refactor PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Enhance Frontmatter and PropertyMerger functionality ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor YamlSerializer for improved deserialization and serialization ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor YamlSerializer for improved deserialization and serialization ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor Frontmatter extraction and PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor NameStandardizer and PropertyMerger for improved property mapping ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor PropertyMerger and YamlSerializer for improved performance and reliability ([@matt-edmondson](https://github.com/matt-edmondson))
-- Enhance PropertyMerger and YamlSerializer functionality ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor Frontmatter and PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor Frontmatter extraction and standardization logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add additional unit tests for Frontmatter functionality ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add comprehensive unit tests for Frontmatter handling ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove obsolete test methods from PropertyMergerTests ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add unit tests for PropertyMerger's similarity mapping ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove obsolete test files for PropertyMerger ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add isolation tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add unit tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update GitHub Actions workflow to include CHANGELOG.md in release notes ([@matt-edmondson](https://github.com/matt-edmondson))
+- Recognise frontmatter delimiters only as whole lines at the top of a document (Claude)
+- [patch] Stop a single-character key being containment-matched onto unrelated properties (Claude)
+- Key the content caches by their input, not a 32-bit hash (Claude)
+- [patch] Clear the five SonarCloud findings on the new code (Claude)
+- [patch] Fold the two NormalizePropertyName helpers and stop decoration-only keys being renamed (Claude)
+- Throw rather than assert on the nullable in the test helper (Claude)
+- [patch] Rank standardized property names by fuzzy similarity (Claude)
+- Gate Dependabot auto-merge on CI actually being green (Claude)
+- ci: adopt the consolidated .NET workflow [patch] (Claude)
+- fix: parse frontmatter by the document's line endings, not the host's [patch] (matt-edmondson)
+- ci: make the SonarQube quality gate opt in [patch] (matt-edmondson)
+- ci: adopt the unified dotnet workflow [patch] (matt-edmondson)
+- chore: store icon.png in LFS as .gitattributes declares (matt-edmondson)
+- docs: scope build badge to the default branch (matt-edmondson)
+- docs: correct README, DESCRIPTION and TAGS metadata (matt-edmondson)
+- Stop Update SDKs failing when there is nothing to update (matt-edmondson)
+- Fix build errors from ktsu.Sdk analyzer update [patch] (matt-edmondson)
+- Sync .github\workflows\dotnet.yml (KtsuTools)
+- Sync .editorconfig (KtsuTools)
+- Sync global.json (KtsuTools)
+- Sync .github\workflows\dotnet.yml (KtsuTools)
+- chore: update ktsu.Sdk to 2.21.1 [patch] (matt-edmondson)
+- chore: remove unused SourceLink package versions (matt-edmondson)
+- chore: remove redundant package version and source link entries (matt-edmondson)
+- Add TAGS.md with NuGet package tags (matt-edmondson)
+- Sync .github\workflows\dotnet.yml (KtsuTools)
+- Remove legacy build scripts (matt-edmondson)
+- Remove .github\workflows\project.yml (matt-edmondson)
+- Migrate to dotnet 10 (matt-edmondson)
+- Update project configuration and scripts for improved build processes (matt-edmondson)
+- Update configuration files and scripts for improved build and test processes (matt-edmondson)
+- Remove obsolete build configuration files and scripts (matt-edmondson)
+- Update project SDK references in Frontmatter and Frontmatter.Test (matt-edmondson)
+- Enhance Frontmatter validation and refactor PropertyMerger logic (matt-edmondson)
+- Enhance Frontmatter and PropertyMerger functionality (matt-edmondson)
+- Refactor YamlSerializer for improved deserialization and serialization (matt-edmondson)
+- Refactor YamlSerializer for improved deserialization and serialization (matt-edmondson)
+- Refactor Frontmatter extraction and PropertyMerger logic (matt-edmondson)
+- Refactor NameStandardizer and PropertyMerger for improved property mapping (matt-edmondson)
+- Refactor PropertyMerger and YamlSerializer for improved performance and reliability (matt-edmondson)
+- Enhance PropertyMerger and YamlSerializer functionality (matt-edmondson)
+- Refactor Frontmatter and PropertyMerger logic (matt-edmondson)
+- Refactor Frontmatter extraction and standardization logic (matt-edmondson)
+- Add additional unit tests for Frontmatter functionality (matt-edmondson)
+- Add comprehensive unit tests for Frontmatter handling (matt-edmondson)
+- Remove obsolete test methods from PropertyMergerTests (matt-edmondson)
+- Add unit tests for PropertyMerger's similarity mapping (matt-edmondson)
+- Remove obsolete test files for PropertyMerger (matt-edmondson)
+- Add isolation tests for PropertyMerger class (matt-edmondson)
+- Add unit tests for PropertyMerger class (matt-edmondson)
+- Update GitHub Actions workflow to include CHANGELOG.md in release notes (matt-edmondson)
 
 ## v1.2.41 (patch)
 
 Changes since v1.2.40:
 
-- [patch] Stop a single-character key being containment-matched onto unrelated properties ([@Claude](https://github.com/Claude))
+- [patch] Stop a single-character key being containment-matched onto unrelated properties (Claude)
 
 ## v1.2.40 (patch)
 
 Changes since v1.2.39:
 
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.2.39 (patch)
 
 Changes since v1.2.38:
 
-- Key the content caches by their input, not a 32-bit hash ([@Claude](https://github.com/Claude))
-- [patch] Clear the five SonarCloud findings on the new code ([@Claude](https://github.com/Claude))
-- [patch] Fold the two NormalizePropertyName helpers and stop decoration-only keys being renamed ([@Claude](https://github.com/Claude))
+- Key the content caches by their input, not a 32-bit hash (Claude)
+- [patch] Clear the five SonarCloud findings on the new code (Claude)
+- [patch] Fold the two NormalizePropertyName helpers and stop decoration-only keys being renamed (Claude)
 
 ## v1.2.38 (patch)
 
 Changes since v1.2.37:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.37 (patch)
 
 Changes since v1.2.36:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.36 (patch)
 
 Changes since v1.2.35:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.35 (patch)
 
 Changes since v1.2.34:
 
-- Throw rather than assert on the nullable in the test helper ([@Claude](https://github.com/Claude))
-- [patch] Rank standardized property names by fuzzy similarity ([@Claude](https://github.com/Claude))
+- Throw rather than assert on the nullable in the test helper (Claude)
+- [patch] Rank standardized property names by fuzzy similarity (Claude)
 
 ## v1.2.34 (patch)
 
 Changes since v1.2.33:
 
-- Bump Polyfill from 11.3.0 to 11.4.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.3.0 to 11.4.0 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.33 (patch)
 
 Changes since v1.2.32:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.32 (patch)
 
 Changes since v1.2.31:
 
-- Bump MSTest.Sdk from 4.4.0 to 4.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.4.0 to 4.4.1 (dependabot[bot])
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.2.31 (patch)
 
 Changes since v1.2.30:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.30 (patch)
 
 Changes since v1.2.29:
 
-- Gate Dependabot auto-merge on CI actually being green ([@Claude](https://github.com/Claude))
+- Gate Dependabot auto-merge on CI actually being green (Claude)
 
 ## v1.2.29 (patch)
 
 Changes since v1.2.28:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.28 (patch)
 
 Changes since v1.2.27:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.27 (patch)
 
 Changes since v1.2.26:
 
-- ci: adopt the consolidated .NET workflow [patch] ([@Claude](https://github.com/Claude))
+- ci: adopt the consolidated .NET workflow [patch] (Claude)
 
 ## v1.2.26 (patch)
 
 Changes since v1.2.25:
 
-- Bump Polyfill from 11.2.0 to 11.3.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 11.2.0 to 11.3.0 (dependabot[bot])
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.2.25 (patch)
 
 Changes since v1.2.24:
 
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.2.24 (patch)
 
@@ -300,15 +300,15 @@ No significant changes detected since v1.2.23.
 
 Changes since v1.2.22:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.22 (patch)
 
 Changes since v1.2.21:
 
-- fix: parse frontmatter by the document's line endings, not the host's [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: make the SonarQube quality gate opt in [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- ci: adopt the unified dotnet workflow [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- fix: parse frontmatter by the document's line endings, not the host's [patch] (matt-edmondson)
+- ci: make the SonarQube quality gate opt in [patch] (matt-edmondson)
+- ci: adopt the unified dotnet workflow [patch] (matt-edmondson)
 
 ## v1.2.21 (patch)
 
@@ -318,312 +318,312 @@ No significant changes detected since v1.2.20.
 
 Changes since v1.2.19:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.19 (patch)
 
 Changes since v1.2.18:
 
-- Bump the ktsu group with 11 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 11 updates (dependabot[bot])
 
 ## v1.2.18 (patch)
 
 Changes since v1.2.17:
 
-- chore: store icon.png in LFS as .gitattributes declares ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: scope build badge to the default branch ([@matt-edmondson](https://github.com/matt-edmondson))
-- docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: store icon.png in LFS as .gitattributes declares (matt-edmondson)
+- docs: scope build badge to the default branch (matt-edmondson)
+- docs: correct README, DESCRIPTION and TAGS metadata (matt-edmondson)
 
 ## v1.2.17 (patch)
 
 Changes since v1.2.16:
 
-- Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
+- Stop Update SDKs failing when there is nothing to update (matt-edmondson)
 
 ## v1.2.16 (patch)
 
 Changes since v1.2.15:
 
-- Fix build errors from ktsu.Sdk analyzer update [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
-- Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
-- Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
+- Fix build errors from ktsu.Sdk analyzer update [patch] (matt-edmondson)
+- Sync .github\workflows\dotnet.yml (KtsuTools)
+- Sync .editorconfig (KtsuTools)
+- Sync global.json (KtsuTools)
+- Sync .github\workflows\dotnet.yml (KtsuTools)
 
 ## v1.2.15 (patch)
 
 Changes since v1.2.14:
 
-- chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: update ktsu.Sdk to 2.21.1 [patch] (matt-edmondson)
 
 ## v1.2.14 (patch)
 
 Changes since v1.2.13:
 
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.13 (patch)
 
 Changes since v1.2.12:
 
-- Bump the ktsu group with 10 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 10 updates (dependabot[bot])
 
 ## v1.2.12 (patch)
 
 Changes since v1.2.11:
 
-- Bump YamlDotNet from 18.0.0 to 18.1.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump Polyfill from 10.11.1 to 10.11.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 10 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump YamlDotNet from 18.0.0 to 18.1.0 (dependabot[bot])
+- Bump Polyfill from 10.11.1 to 10.11.2 (dependabot[bot])
+- Bump the ktsu group with 10 updates (dependabot[bot])
 
 ## v1.2.11 (patch)
 
 Changes since v1.2.10:
 
-- Bump Polyfill from 10.11.0 to 10.11.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.11.0 to 10.11.1 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.10 (patch)
 
 Changes since v1.2.9:
 
-- chore: remove unused SourceLink package versions ([@matt-edmondson](https://github.com/matt-edmondson))
-- chore: remove redundant package version and source link entries ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add TAGS.md with NuGet package tags ([@matt-edmondson](https://github.com/matt-edmondson))
+- chore: remove unused SourceLink package versions (matt-edmondson)
+- chore: remove redundant package version and source link entries (matt-edmondson)
+- Add TAGS.md with NuGet package tags (matt-edmondson)
 
 ## v1.2.9 (patch)
 
 Changes since v1.2.8:
 
-- Bump Polyfill from 9.11.0 to 9.12.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.11.0 to 9.12.0 (dependabot[bot])
 
 ## v1.2.8 (patch)
 
 Changes since v1.2.7:
 
-- Bump Polyfill from 9.10.0 to 9.11.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.10.0 to 9.11.0 (dependabot[bot])
 
 ## v1.2.7 (patch)
 
 Changes since v1.2.6:
 
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml (KtsuTools)
 
 ## v1.2.7-pre.1 (prerelease)
 
 Changes since v1.2.6:
 
-- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml (KtsuTools)
 
 ## v1.2.6 (patch)
 
 Changes since v1.2.5:
 
-- Bump Polyfill from 9.8.1 to 9.9.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump the ktsu group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.8.1 to 9.9.0 (dependabot[bot])
+- Bump the ktsu group with 2 updates (dependabot[bot])
 
 ## v1.2.5 (patch)
 
 Changes since v1.2.4:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
 
 ## v1.2.5-pre.1 (prerelease)
 
 Changes since v1.2.4:
 
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
 
 ## v1.2.4 (patch)
 
 Changes since v1.2.3:
 
-- Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
+- Remove legacy build scripts (matt-edmondson)
 
 ## v1.2.3 (patch)
 
 Changes since v1.2.2:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump MSTest.Sdk from 4.0.2 to 4.1.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Bump Polyfill from 9.7.7 to 9.8.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync COPYRIGHT.md ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync COPYRIGHT.md ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Bump the microsoft group with 2 updates (dependabot[bot])
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync scripts\update-winget-manifests.ps1 (ktsu[bot])
+- Sync scripts\update-winget-manifests.ps1 (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Bump the microsoft group with 2 updates (dependabot[bot])
+- Bump MSTest.Sdk from 4.0.2 to 4.1.0 (dependabot[bot])
+- Bump Polyfill from 9.7.7 to 9.8.1 (dependabot[bot])
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Bump the ktsu group with 1 update (dependabot[bot])
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Sync COPYRIGHT.md (ktsu[bot])
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Sync scripts\update-winget-manifests.ps1 (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Sync COPYRIGHT.md (ktsu[bot])
+- Bump the ktsu group with 5 updates (dependabot[bot])
 
 ## v1.2.3-pre.12 (prerelease)
 
 Changes since v1.2.3-pre.11:
 
-- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 2 updates (dependabot[bot])
 
 ## v1.2.3-pre.11 (prerelease)
 
 Changes since v1.2.3-pre.10:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync scripts\update-winget-manifests.ps1 (ktsu[bot])
 
 ## v1.2.3-pre.10 (prerelease)
 
 Changes since v1.2.3-pre.9:
 
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Sync scripts\update-winget-manifests.ps1 (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Bump the microsoft group with 2 updates (dependabot[bot])
 
 ## v1.2.3-pre.9 (prerelease)
 
 Changes since v1.2.3-pre.8:
 
-- Bump MSTest.Sdk from 4.0.2 to 4.1.0 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump MSTest.Sdk from 4.0.2 to 4.1.0 (dependabot[bot])
 
 ## v1.2.3-pre.8 (prerelease)
 
 Changes since v1.2.3-pre.7:
 
-- Bump Polyfill from 9.7.7 to 9.8.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.7.7 to 9.8.1 (dependabot[bot])
 
 ## v1.2.3-pre.7 (prerelease)
 
 Changes since v1.2.3-pre.6:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
+- Sync global.json (ktsu[bot])
 
 ## v1.2.3-pre.6 (prerelease)
 
 Changes since v1.2.3-pre.5:
 
-- Bump the ktsu group with 1 update ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 1 update (dependabot[bot])
 
 ## v1.2.3-pre.5 (prerelease)
 
 Changes since v1.2.3-pre.4:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync global.json (ktsu[bot])
 
 ## v1.2.3-pre.4 (prerelease)
 
 Changes since v1.2.3-pre.3:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync COPYRIGHT.md ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Sync COPYRIGHT.md (ktsu[bot])
 
 ## v1.2.3-pre.3 (prerelease)
 
 Changes since v1.2.3-pre.2:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync scripts\PSBuild.psm1 (ktsu[bot])
 
 ## v1.2.3-pre.2 (prerelease)
 
 Changes since v1.2.3-pre.1:
 
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync COPYRIGHT.md ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync scripts\update-winget-manifests.ps1 (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Sync COPYRIGHT.md (ktsu[bot])
 
 ## v1.2.3-pre.1 (prerelease)
 
 Changes since v1.2.2:
 
-- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 5 updates (dependabot[bot])
 
 ## v1.2.2 (patch)
 
 Changes since v1.2.1:
 
-- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
+- Remove .github\workflows\project.yml (matt-edmondson)
 
 ## v1.2.2-pre.3 (prerelease)
 
 Changes since v1.2.2-pre.2:
 
-- Bump Polyfill from 9.7.6 to 9.7.7 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 9.7.6 to 9.7.7 (dependabot[bot])
 
 ## v1.2.2-pre.2 (prerelease)
 
 Changes since v1.2.2-pre.1:
 
-- Bump the ktsu group with 5 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the ktsu group with 5 updates (dependabot[bot])
 
 ## v1.2.2-pre.1 (prerelease)
 
 Changes since v1.2.1:
 
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitignore ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Merge remote-tracking branch 'refs/remotes/origin/main' (ktsu[bot])
+- Sync global.json (ktsu[bot])
+- Sync .github\workflows\dotnet.yml (ktsu[bot])
+- Sync .gitignore (ktsu[bot])
 
 ## v1.2.1 (patch)
 
 Changes since v1.2.0:
 
-- Migrate to dotnet 10 ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update project configuration and scripts for improved build processes ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update configuration files and scripts for improved build and test processes ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove obsolete build configuration files and scripts ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update project SDK references in Frontmatter and Frontmatter.Test ([@matt-edmondson](https://github.com/matt-edmondson))
-- Enhance Frontmatter validation and refactor PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Enhance Frontmatter and PropertyMerger functionality ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor YamlSerializer for improved deserialization and serialization ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor YamlSerializer for improved deserialization and serialization ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor Frontmatter extraction and PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor NameStandardizer and PropertyMerger for improved property mapping ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor PropertyMerger and YamlSerializer for improved performance and reliability ([@matt-edmondson](https://github.com/matt-edmondson))
-- Enhance PropertyMerger and YamlSerializer functionality ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor Frontmatter and PropertyMerger logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Refactor Frontmatter extraction and standardization logic ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add additional unit tests for Frontmatter functionality ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add comprehensive unit tests for Frontmatter handling ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove obsolete test methods from PropertyMergerTests ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add unit tests for PropertyMerger's similarity mapping ([@matt-edmondson](https://github.com/matt-edmondson))
-- Remove obsolete test files for PropertyMerger ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add isolation tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
-- Add unit tests for PropertyMerger class ([@matt-edmondson](https://github.com/matt-edmondson))
-- Update GitHub Actions workflow to include CHANGELOG.md in release notes ([@matt-edmondson](https://github.com/matt-edmondson))
+- Migrate to dotnet 10 (matt-edmondson)
+- Update project configuration and scripts for improved build processes (matt-edmondson)
+- Update configuration files and scripts for improved build and test processes (matt-edmondson)
+- Remove obsolete build configuration files and scripts (matt-edmondson)
+- Update project SDK references in Frontmatter and Frontmatter.Test (matt-edmondson)
+- Enhance Frontmatter validation and refactor PropertyMerger logic (matt-edmondson)
+- Enhance Frontmatter and PropertyMerger functionality (matt-edmondson)
+- Refactor YamlSerializer for improved deserialization and serialization (matt-edmondson)
+- Refactor YamlSerializer for improved deserialization and serialization (matt-edmondson)
+- Refactor Frontmatter extraction and PropertyMerger logic (matt-edmondson)
+- Refactor NameStandardizer and PropertyMerger for improved property mapping (matt-edmondson)
+- Refactor PropertyMerger and YamlSerializer for improved performance and reliability (matt-edmondson)
+- Enhance PropertyMerger and YamlSerializer functionality (matt-edmondson)
+- Refactor Frontmatter and PropertyMerger logic (matt-edmondson)
+- Refactor Frontmatter extraction and standardization logic (matt-edmondson)
+- Add additional unit tests for Frontmatter functionality (matt-edmondson)
+- Add comprehensive unit tests for Frontmatter handling (matt-edmondson)
+- Remove obsolete test methods from PropertyMergerTests (matt-edmondson)
+- Add unit tests for PropertyMerger's similarity mapping (matt-edmondson)
+- Remove obsolete test files for PropertyMerger (matt-edmondson)
+- Add isolation tests for PropertyMerger class (matt-edmondson)
+- Add unit tests for PropertyMerger class (matt-edmondson)
+- Update GitHub Actions workflow to include CHANGELOG.md in release notes (matt-edmondson)
 
 ## v1.2.0 (minor)
 
 Changes since v1.1.0:
 
-- Add unit tests for Frontmatter functionality and update solution file ([@matt-edmondson](https://github.com/matt-edmondson))
+- Add unit tests for Frontmatter functionality and update solution file (matt-edmondson)
 
 ## v1.1.0 (major)
 
-- Initial commit ([@matt-edmondson](https://github.com/matt-edmondson))
+- Initial commit (matt-edmondson)
 
