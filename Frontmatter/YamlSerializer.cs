@@ -152,15 +152,7 @@ public static class YamlSerializer
 			object? value = Deserializer.Deserialize<object?>(input);
 			return value is null or System.Collections.IDictionary { Count: 0 };
 		}
-		catch (YamlException)
-		{
-			return false;
-		}
-		catch (InvalidOperationException)
-		{
-			return false;
-		}
-		catch (ArgumentException)
+		catch (Exception ex) when (ex is YamlException or InvalidOperationException or ArgumentException)
 		{
 			return false;
 		}
