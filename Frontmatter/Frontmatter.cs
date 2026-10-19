@@ -335,8 +335,9 @@ public static class Frontmatter
 	/// <param name="body">Output parameter that will contain the markdown body without frontmatter.</param>
 	/// <param name="hasUnreadableBlock">
 	/// True when a non-blank frontmatter block failed to parse. Such text is missing from the returned objects
-	/// but not from the document. An opening delimiter that never closes is not frontmatter, so it is not
-	/// reported here.
+	/// but not from the document. A block that parses but holds no keys (a comment only, <c>~</c>, <c>null</c>
+	/// or <c>{}</c>) is empty, not unreadable, so it is skipped without being reported. An opening delimiter
+	/// that never closes is not frontmatter, so it is not reported here either.
 	/// </param>
 	/// <returns>A collection of dictionaries representing each frontmatter section that parsed.</returns>
 	private static List<Dictionary<string, object>> ExtractFrontmatterObjects(string input, out string body, out bool hasUnreadableBlock)
@@ -361,7 +362,7 @@ public static class Frontmatter
 			{
 				frontmatterObjects.Add(frontmatterObject);
 			}
-			else
+			else if (!YamlSerializer.IsEmptyYamlDocument(section))
 			{
 				hasUnreadableBlock = true;
 			}
