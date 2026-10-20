@@ -48,15 +48,39 @@ public class EmptyYamlBlockTests
 	}
 
 	[TestMethod]
-	[DataRow("# draft")]
+	[DataRow("# TODO: fill in")]
 	[DataRow("~")]
 	[DataRow("null")]
-	public void AddFrontmatter_EmptyYamlBlock_LeavesTheDocumentUnchanged(string yaml)
+	[DataRow("{}")]
+	public void AddFrontmatter_EmptyYamlBlock_AddsTheProperties(string yaml)
 	{
-		// A block with text in it that yields no properties is left alone, as for any block that cannot be read
+		// A header that parses but holds no keys is empty, not unreadable, so the new properties fill it
+		string result = Frontmatter.AddFrontmatter(Document(yaml), new Dictionary<string, object> { ["title"] = "Hello" });
+
+		Assert.AreEqual($"---{Nl}title: Hello{Nl}---{Nl}Body text{Nl}", result);
+	}
+
+	[TestMethod]
+	[DataRow("# c")]
+	[DataRow("~")]
+	[DataRow("{}")]
+	public void CombineFrontmatter_EmptyBlockStackedOnARealOne_CombinesThem(string yaml)
+	{
+		string input = $"---{Nl}{yaml}{Nl}---{Nl}---{Nl}title: a{Nl}---{Nl}Body text{Nl}";
+
+		Assert.AreEqual($"---{Nl}title: a{Nl}---{Nl}Body text{Nl}", Frontmatter.CombineFrontmatter(input));
+	}
+
+	[TestMethod]
+	[DataRow("key: [unclosed")]
+	[DataRow("just a scalar")]
+	[DataRow("- a list")]
+	public void AddFrontmatter_UnreadableBlock_LeavesTheDocumentUnchanged(string yaml)
+	{
+		// A block that fails to parse, or whose root is not a mapping, is still left alone rather than overwritten
 		string input = Document(yaml);
 
-		Assert.AreEqual(input, Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["title"] = "A" }));
+		Assert.AreEqual(input, Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["title"] = "Hello" }));
 	}
 
 	[TestMethod]

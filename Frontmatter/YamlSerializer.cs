@@ -137,6 +137,28 @@ public static class YamlSerializer
 	}
 
 	/// <summary>
+	/// Reports whether a YAML document parses but holds no keys: a comment only, <c>~</c>, <c>null</c> or <c>{}</c>.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="TryParseYamlObject"/> returns false for such a document as well as for one that fails to parse;
+	/// this tells the two apart, so an empty header can be treated as empty rather than unreadable.
+	/// </remarks>
+	/// <param name="input">The YAML text.</param>
+	/// <returns>true if the document parses to nothing or to an empty mapping; otherwise, false.</returns>
+	internal static bool IsEmptyYamlDocument(string input)
+	{
+		try
+		{
+			object? value = Deserializer.Deserialize<object?>(input);
+			return value is null or System.Collections.IDictionary { Count: 0 };
+		}
+		catch (Exception ex) when (ex is YamlException or InvalidOperationException or ArgumentException)
+		{
+			return false;
+		}
+	}
+
+	/// <summary>
 	/// Serializes a dictionary to a YAML string.
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
