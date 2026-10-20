@@ -5,6 +5,7 @@ namespace ktsu.Frontmatter;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 
 /// <summary>
@@ -261,14 +262,9 @@ public static class Frontmatter
 	{
 		result = null;
 
-		Dictionary<string, object> added = [];
-		foreach (KeyValuePair<string, object> property in frontmatter)
-		{
-			if (!existing.ContainsKey(property.Key))
-			{
-				added[property.Key] = property.Value;
-			}
-		}
+		Dictionary<string, object> added = frontmatter
+			.Where(property => !existing.ContainsKey(property.Key))
+			.ToDictionary(property => property.Key, property => property.Value);
 
 		if (existing.Count == 0
 			|| added.Count == 0
