@@ -217,16 +217,20 @@ public static class YamlSerializer
 	}
 
 	/// <summary>
-	/// Double-quotes any string that starts or ends with whitespace. YAML strips that whitespace from a
-	/// plain scalar, and <c>WithQuotingNecessaryStrings</c> does not quote a string that ends in a tab, so
-	/// without this the value would come back changed on the next read.
+	/// Double-quotes any string that starts or ends with whitespace, or that holds a carriage return or
+	/// NEL. YAML strips edge whitespace from a plain scalar, and <c>WithQuotingNecessaryStrings</c> does not
+	/// quote a string that ends in a tab. A string with <c>\r</c> or U+0085 would otherwise be written as a
+	/// block scalar, whose line breaks all read back as <c>\n</c>. Without this the value would come back
+	/// changed on the next read.
 	/// </summary>
 	private sealed class EdgeWhitespaceQuotingEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
 	{
+		private static readonly char[] NormalizedLineBreaks = ['\r', '\u0085'];
+
 		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
 		{
 			if (eventInfo.Source.Value is string { Length: > 0 } text
-				&& (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1])))
+				&& (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1]) || text.IndexOfAny(NormalizedLineBreaks) >= 0))
 			{
 				eventInfo.Style = ScalarStyle.DoubleQuoted;
 			}
