@@ -233,7 +233,7 @@ public static class Frontmatter
 
 		string nl = NewLineOf(input);
 		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
-		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{BodySection(input, nl)}";
+		return WithHeader(yamlFrontmatter, input, nl);
 	}
 
 	/// <summary>
@@ -326,7 +326,7 @@ public static class Frontmatter
 		ExtractFrontmatterObjects(input, out string body);
 		string nl = NewLineOf(input);
 		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
-		return $"{FrontmatterDelimiter}{nl}{yamlFrontmatter}{nl}{FrontmatterDelimiter}{nl}{BodySection(body, nl)}";
+		return WithHeader(yamlFrontmatter, body, nl);
 	}
 
 	/// <summary>
@@ -637,6 +637,29 @@ public static class Frontmatter
 	{
 		string trimmed = TrimBody(body);
 		return trimmed.Length == 0 ? string.Empty : trimmed + newLine;
+	}
+
+	/// <summary>
+	/// Writes a document from a header and a body.
+	/// </summary>
+	/// <remarks>
+	/// The body is written directly under the header unless that would make a passage at its top read back
+	/// as another frontmatter block, as a <c>---</c> … <c>---</c> passage holding <c>key: value</c> text
+	/// would. Such a body keeps one blank line ahead of it, which is what set it apart in the first place.
+	/// </remarks>
+	/// <param name="yamlFrontmatter">The serialized header properties.</param>
+	/// <param name="body">The body to write after the header.</param>
+	/// <param name="newLine">The line ending to use.</param>
+	/// <returns>The document.</returns>
+	private static string WithHeader(string yamlFrontmatter, string body, string newLine)
+	{
+		string header = $"{FrontmatterDelimiter}{newLine}{yamlFrontmatter}{newLine}{FrontmatterDelimiter}{newLine}";
+		string section = BodySection(body, newLine);
+		string document = header + section;
+
+		return TrySplitFrontmatterBlocks(document, out List<string> blocks, out _) && blocks.Count > 1
+			? header + newLine + section
+			: document;
 	}
 
 	/// <summary>
