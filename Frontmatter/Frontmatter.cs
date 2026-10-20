@@ -298,7 +298,6 @@ public static class Frontmatter
 			|| candidateBlocks.Count != 1
 			|| candidateBody != body
 			|| !YamlSerializer.TryParseYamlObject(candidateBlocks[0].Trim(), out Dictionary<string, object>? parsed)
-			|| parsed == null
 			|| YamlSerializer.SerializeYamlObject(parsed) != YamlSerializer.SerializeYamlObject(combined))
 		{
 			return false;

@@ -51,7 +51,7 @@ public class AddKeepsHeaderTextTests
 		Dictionary<string, object>? properties = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(properties);
 		Assert.AreEqual("A", properties["title"]);
-		CollectionAssert.AreEqual(new List<object> { "x", "y" }, (List<object>)properties["tags"]);
+		Assert.AreSequenceEqual(new List<object> { "x", "y" }, (List<object>)properties["tags"]);
 	}
 
 	[TestMethod]
