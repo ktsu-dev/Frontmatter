@@ -238,14 +238,14 @@ public static class Frontmatter
 
 	/// <summary>
 	/// Adds properties to a document's header by inserting them in front of its closing delimiter, leaving
-	/// the rest of the document, the header's comments and formatting included, exactly as written.
+	/// the rest of the header, its comments and formatting included, exactly as written.
 	/// </summary>
 	/// <remarks>
 	/// Only a document with a single frontmatter block that already holds properties qualifies: stacked
 	/// blocks have to be folded into one, and an empty placeholder header is replaced. Keys the header already has are left out, as <see cref="CombineFrontmatterObjects"/> keeps
-	/// the existing value. The result is read back, and it is used only when it holds exactly
-	/// <paramref name="combined"/> and the original body; anything else, such as a header written as a flow
-	/// mapping, falls back to rebuilding the header.
+	/// the existing value. The body is written as a rebuilt header would write it. The result is read back,
+	/// and it is used only when it holds exactly <paramref name="combined"/> and the original body; anything
+	/// else, such as a header written as a flow mapping, falls back to rebuilding the header.
 	/// </remarks>
 	/// <param name="input">The document, which has frontmatter that could be read.</param>
 	/// <param name="existing">The properties the document's header already holds.</param>
@@ -290,13 +290,16 @@ public static class Frontmatter
 		string nl = NewLineOf(input);
 		string addedYaml = WithNewLines(YamlSerializer.SerializeYamlObject(added).Trim(), nl);
 		int at = lines[close].Start;
+		string closingLine = input[at..lines[close].End].TrimEnd();
+
 		// The opening line is written as a bare delimiter, as a rebuilt header's is, so a byte order mark or
 		// trailing whitespace on it is dropped.
-		string candidate = FrontmatterDelimiter + nl + input[lines[1].Start..at] + addedYaml + nl + input[at..];
+		string header = FrontmatterDelimiter + nl + input[lines[1].Start..at] + addedYaml + nl + closingLine + nl;
+		string candidate = JoinHeaderAndBody(header, body, nl);
 
 		if (!TrySplitFrontmatterBlocks(candidate, out List<string> candidateBlocks, out string candidateBody)
 			|| candidateBlocks.Count != 1
-			|| candidateBody != body
+			|| TrimBody(candidateBody) != TrimBody(body)
 			|| !YamlSerializer.TryParseYamlObject(candidateBlocks[0].Trim(), out Dictionary<string, object>? parsed)
 			|| YamlSerializer.SerializeYamlObject(parsed) != YamlSerializer.SerializeYamlObject(combined))
 		{
@@ -640,20 +643,29 @@ public static class Frontmatter
 	}
 
 	/// <summary>
-	/// Writes a document from a header and a body.
+	/// Writes a document from serialized header properties and a body.
+	/// </summary>
+	/// <param name="yamlFrontmatter">The serialized header properties.</param>
+	/// <param name="body">The body to write after the header.</param>
+	/// <param name="newLine">The line ending to use.</param>
+	/// <returns>The document.</returns>
+	private static string WithHeader(string yamlFrontmatter, string body, string newLine) =>
+		JoinHeaderAndBody($"{FrontmatterDelimiter}{newLine}{yamlFrontmatter}{newLine}{FrontmatterDelimiter}{newLine}", body, newLine);
+
+	/// <summary>
+	/// Writes a document from a complete header, delimiters included, and a body.
 	/// </summary>
 	/// <remarks>
 	/// The body is written directly under the header unless that would make a passage at its top read back
 	/// as another frontmatter block, as a <c>---</c> … <c>---</c> passage holding <c>key: value</c> text
 	/// would. Such a body keeps one blank line ahead of it, which is what set it apart in the first place.
 	/// </remarks>
-	/// <param name="yamlFrontmatter">The serialized header properties.</param>
+	/// <param name="header">The header, ending with its closing delimiter and a line ending.</param>
 	/// <param name="body">The body to write after the header.</param>
 	/// <param name="newLine">The line ending to use.</param>
 	/// <returns>The document.</returns>
-	private static string WithHeader(string yamlFrontmatter, string body, string newLine)
+	private static string JoinHeaderAndBody(string header, string body, string newLine)
 	{
-		string header = $"{FrontmatterDelimiter}{newLine}{yamlFrontmatter}{newLine}{FrontmatterDelimiter}{newLine}";
 		string section = BodySection(body, newLine);
 		string document = header + section;
 

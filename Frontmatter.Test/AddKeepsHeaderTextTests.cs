@@ -99,6 +99,33 @@ public class AddKeepsHeaderTextTests
 	}
 
 	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	public void AddFrontmatter_BodyIsWrittenAsARebuiltHeaderWritesIt(string nl)
+	{
+		string input = Lines(nl, "---", "title: A # c", "---", string.Empty, "Hello", "  ");
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["author"] = "Jane" });
+
+		Assert.AreEqual(Lines(nl, "---", "title: A # c", "author: Jane", "---", "Hello"), result);
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	public void AddFrontmatter_BodyOpensWithARule_KeepsTheCommentsAndTheBlankLineBeforeTheRule(string nl)
+	{
+		string input = Lines(nl, "---", "title: A # c", "---", string.Empty, "---", "Note: archived", "---", string.Empty, "Hello");
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["author"] = "Jane" });
+
+		Assert.AreEqual(
+			Lines(nl, "---", "title: A # c", "author: Jane", "---", string.Empty, "---", "Note: archived", "---", string.Empty, "Hello"),
+			result);
+		Assert.AreEqual(Frontmatter.ExtractBody(input), Frontmatter.ExtractBody(result));
+	}
+
+	[TestMethod]
 	public void AddFrontmatter_StackedBlocks_AreStillFoldedIntoOne()
 	{
 		string input = "---\ntitle: A\n---\n---\nauthor: B\n---\nBody\n";
