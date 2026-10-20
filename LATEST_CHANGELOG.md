@@ -1,7 +1,6 @@
-## v1.4.6-pre.1 (prerelease)
+## v1.4.6 (patch)
 
 Changes since v1.4.5:
 
-- Bump Polyfill from 11.4.3 to 11.4.5 (dependabot[bot])
-- Bump the ktsu group with 1 update (dependabot[bot])
+- Double-quote strings holding a carriage return or NEL so they round-trip [patch] (Claude)
 
