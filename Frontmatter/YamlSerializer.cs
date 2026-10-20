@@ -93,7 +93,7 @@ public static class YamlSerializer
 			{
 				if (pair.Key != null)
 				{
-					string key = pair.Key.ToString()!;
+					string key = ScalarKey(pair.Key);
 					// Only add the key if it doesn't already exist
 					if (!result.ContainsKey(key))
 					{
@@ -216,7 +216,7 @@ public static class YamlSerializer
 		object converted = value switch
 		{
 			Dictionary<object, object> dict => dict.ToDictionary(
-				kvp => kvp.Key?.ToString() ?? string.Empty,
+				kvp => kvp.Key is null ? string.Empty : ScalarKey(kvp.Key),
 				kvp => ConvertValue(kvp.Value, state)),
 			List<object> list => list.Select(item => ConvertValue(item, state)).ToList(),
 			System.Collections.IList list => list.Cast<object>().Select(item => ConvertValue(item, state)).ToList(),
@@ -226,6 +226,20 @@ public static class YamlSerializer
 		state.Ancestors.Remove(value);
 		return converted;
 	}
+
+	/// <summary>
+	/// Returns the text of a mapping key.
+	/// </summary>
+	/// <remarks>
+	/// A complex key (<c>? [a, b]</c> or <c>? {x: 1}</c>) deserializes to a list or dictionary, whose
+	/// <see cref="object.ToString"/> is its .NET type name. Writing that back would replace the key, so the
+	/// block is reported as unreadable instead with an <see cref="InvalidOperationException"/>, and the
+	/// callers leave it alone.
+	/// </remarks>
+	private static string ScalarKey(object key) =>
+		key is System.Collections.IEnumerable and not string
+			? throw new InvalidOperationException("The YAML contains a key that is not a scalar.")
+			: key.ToString()!;
 
 	/// <summary>
 	/// Tracks one block's conversion: the containers on the path being converted, to find a cycle, and
