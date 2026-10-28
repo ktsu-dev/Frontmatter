@@ -232,7 +232,7 @@ public static class Frontmatter
 		}
 
 		string nl = NewLineOf(input);
-		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeCallerValues(frontmatter).Trim(), nl);
 		return WithHeader(yamlFrontmatter, input, nl);
 	}
 
@@ -288,7 +288,7 @@ public static class Frontmatter
 		}
 
 		string nl = NewLineOf(input);
-		string addedYaml = WithNewLines(YamlSerializer.SerializeYamlObject(added).Trim(), nl);
+		string addedYaml = WithNewLines(YamlSerializer.SerializeCallerValues(added).Trim(), nl);
 		int at = lines[close].Start;
 		string closingLine = input[at..lines[close].End].TrimEnd();
 
@@ -328,7 +328,7 @@ public static class Frontmatter
 
 		ExtractFrontmatterObjects(input, out string body);
 		string nl = NewLineOf(input);
-		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(frontmatter).Trim(), nl);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeCallerValues(frontmatter).Trim(), nl);
 		return WithHeader(yamlFrontmatter, body, nl);
 	}
 
@@ -370,7 +370,7 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="frontmatter">The frontmatter dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML frontmatter.</returns>
-	public static string SerializeFrontmatter(Dictionary<string, object> frontmatter) => frontmatter == null || frontmatter.Count == 0 ? string.Empty : YamlSerializer.SerializeYamlObject(frontmatter).Trim();
+	public static string SerializeFrontmatter(Dictionary<string, object> frontmatter) => frontmatter == null || frontmatter.Count == 0 ? string.Empty : YamlSerializer.SerializeCallerValues(frontmatter).Trim();
 
 	/// <summary>
 	/// Sorts frontmatter properties according to standard conventions.

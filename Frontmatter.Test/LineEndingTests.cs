@@ -114,8 +114,8 @@ public class LineEndingTests
 	{
 		string input = Lines(nl, "---", "title: x", "---", string.Empty, string.Empty, "Body");
 
-		string result = Frontmatter.ReplaceFrontmatter(input, new Dictionary<string, object> { ["title"] = "y" });
+		string result = Frontmatter.ReplaceFrontmatter(input, new Dictionary<string, object> { ["title"] = "z" });
 
-		Assert.AreEqual(Lines(nl, "---", "title: y", "---", "Body"), result);
+		Assert.AreEqual(Lines(nl, "---", "title: z", "---", "Body"), result);
 	}
 }
