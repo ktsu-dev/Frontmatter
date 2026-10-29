@@ -277,29 +277,9 @@ public static class YamlSerializer
 #endif
 			;
 
-		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
-		{
-			string text = parser.Consume<Scalar>().Value;
-			CultureInfo culture = CultureInfo.InvariantCulture;
-			if (type == typeof(DateTimeOffset))
-			{
-				return DateTimeOffset.Parse(text, culture, DateTimeStyles.RoundtripKind);
-			}
-
-#if NET6_0_OR_GREATER
-			if (type == typeof(DateOnly))
-			{
-				return DateOnly.Parse(text, culture);
-			}
-
-			if (type == typeof(TimeOnly))
-			{
-				return TimeOnly.Parse(text, culture);
-			}
-#endif
-
-			return new System.Version(text);
-		}
+		// The converter is registered on the serializer only; reading leaves these values as the scalars written.
+		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
+			throw new NotSupportedException("This converter only writes values.");
 
 		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
 		{
@@ -317,12 +297,9 @@ public static class YamlSerializer
 					emitter.Emit(new Scalar(null, null, time.ToString("HH:mm:ss.FFFFFFF", culture), ScalarStyle.DoubleQuoted, true, true));
 					break;
 #endif
-				case System.Version version:
-					serializer(version.ToString(), typeof(string));
-					break;
 				default:
-					// Only a null reaches here, which an empty plain scalar writes.
-					emitter.Emit(new Scalar(string.Empty));
+					// A Version, which Accepts leaves as the only other type.
+					serializer(value?.ToString(), typeof(string));
 					break;
 			}
 		}
