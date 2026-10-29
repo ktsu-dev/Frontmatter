@@ -19,7 +19,7 @@ public class YamlMergeKeyTests
 		Assert.IsNotNull(result);
 		Assert.IsFalse(result.ContainsKey("<<"));
 		Assert.AreEqual("post", result["layout"]);
-		Assert.AreEqual(true, result["draft"]);
+		Assert.IsTrue((bool)result["draft"]);
 		Assert.AreEqual("Hello", result["title"]);
 	}
 
@@ -44,7 +44,7 @@ public class YamlMergeKeyTests
 
 		Assert.IsNotNull(result);
 		Assert.AreEqual("page", result["layout"]);
-		Assert.AreEqual(true, result["draft"]);
+		Assert.IsTrue((bool)result["draft"]);
 	}
 
 	[TestMethod]

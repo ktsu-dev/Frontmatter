@@ -264,29 +264,37 @@ public static class YamlSerializer
 
 			foreach (Dictionary<object, object> source in sources)
 			{
-				if (!state.Ancestors.Add(source))
-				{
-					throw new InvalidOperationException("The YAML merges a mapping into itself.");
-				}
-
-				foreach (KeyValuePair<object, object> merged in ResolveMergeKeys(source, state))
-				{
-					if (++state.ValueCount > MaxExpandedValues)
-					{
-						throw new InvalidOperationException($"The YAML expands to more than {MaxExpandedValues} values.");
-					}
-
-					if (written.Add(ScalarKey(merged.Key)))
-					{
-						resolved.Add(merged);
-					}
-				}
-
-				state.Ancestors.Remove(source);
+				AddMergedKeys(source, written, resolved, state);
 			}
 		}
 
 		return resolved;
+	}
+
+	/// <summary>
+	/// Adds the keys of one merged mapping, its own merge keys resolved, that are not already written.
+	/// </summary>
+	private static void AddMergedKeys(Dictionary<object, object> source, HashSet<string> written, List<KeyValuePair<object, object>> resolved, ConversionState state)
+	{
+		if (!state.Ancestors.Add(source))
+		{
+			throw new InvalidOperationException("The YAML merges a mapping into itself.");
+		}
+
+		foreach (KeyValuePair<object, object> merged in ResolveMergeKeys(source, state))
+		{
+			if (++state.ValueCount > MaxExpandedValues)
+			{
+				throw new InvalidOperationException($"The YAML expands to more than {MaxExpandedValues} values.");
+			}
+
+			if (written.Add(ScalarKey(merged.Key)))
+			{
+				resolved.Add(merged);
+			}
+		}
+
+		state.Ancestors.Remove(source);
 	}
 
 	/// <summary>
