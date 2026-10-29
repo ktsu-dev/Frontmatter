@@ -29,6 +29,12 @@ public static class YamlSerializer
 	internal const int MaxExpandedValues = 100_000;
 
 	/// <summary>
+	/// The YAML 1.1 merge key, which merges the keys of another mapping, or of a sequence of mappings, into
+	/// the mapping it is written in.
+	/// </summary>
+	private const string MergeKey = "<<";
+
+	/// <summary>
 	/// Reusable deserializer instance
 	/// </summary>
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
@@ -87,9 +93,10 @@ public static class YamlSerializer
 
 			result = [];
 			ConversionState state = new();
+			state.Ancestors.Add(rawData);
 
 			// Convert dictionary keys to strings and preserve the first occurrence of duplicate keys
-			foreach (KeyValuePair<object, object> pair in rawData)
+			foreach (KeyValuePair<object, object> pair in ResolveMergeKeys(rawData, state))
 			{
 				if (pair.Key != null)
 				{
@@ -215,7 +222,7 @@ public static class YamlSerializer
 
 		object converted = value switch
 		{
-			Dictionary<object, object> dict => dict.ToDictionary(
+			Dictionary<object, object> dict => ResolveMergeKeys(dict, state).ToDictionary(
 				kvp => kvp.Key is null ? string.Empty : ScalarKey(kvp.Key),
 				kvp => ConvertValue(kvp.Value, state)),
 			List<object> list => list.Select(item => ConvertValue(item, state)).ToList(),
@@ -225,6 +232,76 @@ public static class YamlSerializer
 
 		state.Ancestors.Remove(value);
 		return converted;
+	}
+
+	/// <summary>
+	/// Returns a mapping's entries with its YAML 1.1 merge key (<c>&lt;&lt;: *anchor</c>) resolved into the
+	/// keys it merges, as Jekyll, PyYAML and js-yaml read it, rather than kept as a literal <c>&lt;&lt;</c> key.
+	/// </summary>
+	/// <remarks>
+	/// The merged keys take the merge key's place. A key written in the mapping itself wins over a merged
+	/// one wherever it appears, and in a sequence of mappings an earlier mapping wins over a later one, as
+	/// the merge key type specifies. A merge key whose value is neither a mapping nor a sequence of mappings
+	/// is kept as an ordinary key. A mapping merged into itself is rejected as a cycle, and merged keys count
+	/// towards <see cref="MaxExpandedValues"/>, so both report the block as unreadable.
+	/// </remarks>
+	private static List<KeyValuePair<object, object>> ResolveMergeKeys(Dictionary<object, object> mapping, ConversionState state)
+	{
+		if (!mapping.TryGetValue(MergeKey, out object? merge) || !TryGetMergeSources(merge, out List<Dictionary<object, object>>? sources))
+		{
+			return [.. mapping];
+		}
+
+		HashSet<string> written = [.. mapping.Keys.Where(key => key is not MergeKey).Select(ScalarKey)];
+		List<KeyValuePair<object, object>> resolved = [];
+		foreach (KeyValuePair<object, object> pair in mapping)
+		{
+			if (pair.Key is not MergeKey)
+			{
+				resolved.Add(pair);
+				continue;
+			}
+
+			foreach (Dictionary<object, object> source in sources)
+			{
+				if (!state.Ancestors.Add(source))
+				{
+					throw new InvalidOperationException("The YAML merges a mapping into itself.");
+				}
+
+				foreach (KeyValuePair<object, object> merged in ResolveMergeKeys(source, state))
+				{
+					if (++state.ValueCount > MaxExpandedValues)
+					{
+						throw new InvalidOperationException($"The YAML expands to more than {MaxExpandedValues} values.");
+					}
+
+					if (written.Add(ScalarKey(merged.Key)))
+					{
+						resolved.Add(merged);
+					}
+				}
+
+				state.Ancestors.Remove(source);
+			}
+		}
+
+		return resolved;
+	}
+
+	/// <summary>
+	/// Reads the value of a merge key as the mappings it merges: a single mapping, or a sequence of them.
+	/// </summary>
+	private static bool TryGetMergeSources(object? merge, [NotNullWhen(true)] out List<Dictionary<object, object>>? sources)
+	{
+		sources = merge switch
+		{
+			Dictionary<object, object> mapping => [mapping],
+			List<object> list when list.All(item => item is Dictionary<object, object>) => [.. list.Cast<Dictionary<object, object>>()],
+			_ => null,
+		};
+
+		return sources is not null;
 	}
 
 	/// <summary>
