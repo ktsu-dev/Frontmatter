@@ -243,7 +243,7 @@ public static class Frontmatter
 	/// <remarks>
 	/// Only a document with a single frontmatter block that already holds properties qualifies: stacked
 	/// blocks have to be folded into one, and an empty placeholder header is replaced. Keys the header already has are left out, as <see cref="CombineFrontmatterObjects"/> keeps
-	/// the existing value. The body is written as a rebuilt header would write it. The result is read back,
+	/// the existing value, so when the header already has every key nothing is inserted and it is kept as written. The body is written as a rebuilt header would write it. The result is read back,
 	/// and it is used only when it holds exactly <paramref name="combined"/> and the original body; anything
 	/// else, such as a header written as a flow mapping, falls back to rebuilding the header.
 	/// </remarks>
@@ -267,7 +267,6 @@ public static class Frontmatter
 			.ToDictionary(property => property.Key, property => property.Value);
 
 		if (existing.Count == 0
-			|| added.Count == 0
 			|| !TrySplitFrontmatterBlocks(input, out List<string> blocks, out string body)
 			|| blocks.Count != 1)
 		{
@@ -288,13 +287,13 @@ public static class Frontmatter
 		}
 
 		string nl = NewLineOf(input);
-		string addedYaml = WithNewLines(YamlSerializer.SerializeCallerValues(added).Trim(), nl);
+		string addedYaml = added.Count == 0 ? string.Empty : WithNewLines(YamlSerializer.SerializeCallerValues(added).Trim(), nl) + nl;
 		int at = lines[close].Start;
 		string closingLine = input[at..lines[close].End].TrimEnd();
 
 		// The opening line is written as a bare delimiter, as a rebuilt header's is, so a byte order mark or
 		// trailing whitespace on it is dropped.
-		string header = FrontmatterDelimiter + nl + input[lines[1].Start..at] + addedYaml + nl + closingLine + nl;
+		string header = FrontmatterDelimiter + nl + input[lines[1].Start..at] + addedYaml + closingLine + nl;
 		string candidate = JoinHeaderAndBody(header, body, nl);
 
 		if (!TrySplitFrontmatterBlocks(candidate, out List<string> candidateBlocks, out string candidateBody)

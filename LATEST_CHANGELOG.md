@@ -2,6 +2,7 @@
 
 Changes since v1.4.5:
 
+- Keep the header as written when AddFrontmatter adds no new key [patch] (Claude)
 - Write the body after an inserted key as a rebuilt header writes it (Claude)
 - Merge main into fix/170-add-keeps-header-text (Claude)
 - Drop a null check the parse already rules out, and use AreSequenceEqual (Claude)

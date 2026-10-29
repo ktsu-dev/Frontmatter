@@ -41,6 +41,28 @@ public class AddKeepsHeaderTextTests
 	}
 
 	[TestMethod]
+	[DataRow("---\n# keep me\ntitle: A # c\n---\nBody\n", DisplayName = "Comments")]
+	[DataRow("---\ntitle: ~\n---\nBody\n", DisplayName = "Tilde null")]
+	[DataRow("---\n'title': a\n---\nBody\n", DisplayName = "Quoted key")]
+	[DataRow("---\r\n# keep me\r\ntitle: A # c\r\n...\r\nBody\r\n", DisplayName = "CRLF and document end marker")]
+	public void AddFrontmatter_EveryKeyAlreadyPresent_KeepsTheHeaderAsWritten(string input)
+	{
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["title"] = "X" });
+
+		Assert.AreEqual(input, result);
+	}
+
+	[TestMethod]
+	public void AddFrontmatter_EveryKeyAlreadyPresent_WritesTheBodyAsARebuiltHeaderWritesIt()
+	{
+		string input = "---\ntitle: A # c\n---\n\nHello\n  \n";
+
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["title"] = "X" });
+
+		Assert.AreEqual("---\ntitle: A # c\n---\nHello\n", result);
+	}
+
+	[TestMethod]
 	public void AddFrontmatter_ListValue_IsInsertedAsYaml()
 	{
 		string input = "---\n# note\ntitle: A\n---\nBody\n";
