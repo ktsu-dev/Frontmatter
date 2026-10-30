@@ -67,13 +67,13 @@ public class AddKeepsHeaderTextTests
 	{
 		string input = "---\n# note\ntitle: A\n---\nBody\n";
 
-		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["tags"] = new List<object> { "x", "y" } });
+		string result = Frontmatter.AddFrontmatter(input, new Dictionary<string, object> { ["tags"] = new List<object> { "x", "z" } });
 
-		Assert.AreEqual("---\n# note\ntitle: A\ntags:\n- x\n- y\n---\nBody\n", result);
+		Assert.AreEqual("---\n# note\ntitle: A\ntags:\n- x\n- z\n---\nBody\n", result);
 		Dictionary<string, object>? properties = Frontmatter.ExtractFrontmatter(result);
 		Assert.IsNotNull(properties);
 		Assert.AreEqual("A", properties["title"]);
-		Assert.AreSequenceEqual(new List<object> { "x", "y" }, (List<object>)properties["tags"]);
+		Assert.AreSequenceEqual(new List<object> { "x", "z" }, (List<object>)properties["tags"]);
 	}
 
 	[TestMethod]

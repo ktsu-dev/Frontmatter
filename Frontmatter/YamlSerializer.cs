@@ -51,6 +51,19 @@ public static class YamlSerializer
 		.Build();
 
 	/// <summary>
+	/// Serializer for values a caller supplies. It also quotes strings that YAML 1.1 reads as booleans or
+	/// numbers, such as <c>no</c>, <c>on</c> or <c>12:30</c>, so Jekyll, PyYAML and other YAML 1.1 readers
+	/// see them as strings too. Values read from a document are not written with it: a plain <c>yes</c> is
+	/// read as the string "yes", and quoting it would change what a YAML 1.1 reader sees in the other direction.
+	/// </summary>
+	private static readonly ISerializer CallerValueSerializer = new SerializerBuilder()
+		.WithNamingConvention(NullNamingConvention.Instance)
+		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
+		.WithQuotingNecessaryStrings(quoteYaml1_1Strings: true)
+		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
+		.Build();
+
+	/// <summary>
 	/// Attempts to parse a YAML string into a dictionary object.
 	/// </summary>
 	/// <param name="input">The YAML string to parse.</param>
@@ -168,6 +181,15 @@ public static class YamlSerializer
 	/// <returns>A string containing the serialized YAML.</returns>
 	public static string SerializeYamlObject(Dictionary<string, object> input) =>
 		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
+
+	/// <summary>
+	/// Serializes properties a caller supplied to a YAML string, quoting strings that a YAML 1.1 reader
+	/// would take for a boolean or a number as well as those a YAML 1.2 reader would.
+	/// </summary>
+	/// <param name="input">The dictionary to serialize.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	internal static string SerializeCallerValues(Dictionary<string, object> input) =>
+		input == null || input.Count == 0 ? string.Empty : CallerValueSerializer.Serialize(input);
 
 	/// <summary>
 	/// Creates a deep clone of a value, handling nested dictionaries and collections.
