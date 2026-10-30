@@ -3,8 +3,10 @@
 namespace ktsu.Frontmatter;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
 using YamlDotNet.Serialization.NamingConventions;
@@ -45,6 +47,7 @@ public static class YamlSerializer
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithQuotingNecessaryStrings()
 		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
+		.WithTypeConverter(new InvariantScalarTypeConverter())
 		.Build();
 
 	/// <summary>
@@ -250,6 +253,56 @@ public static class YamlSerializer
 		public HashSet<object> Ancestors { get; } = new(ReferenceComparer.Instance);
 
 		public int ValueCount { get; set; }
+	}
+
+	/// <summary>
+	/// Writes <see cref="DateTimeOffset"/>, <see cref="System.Version"/>, and on .NET 6 or later <c>DateOnly</c> and
+	/// <c>TimeOnly</c>, as one invariant scalar. Without it YamlDotNet writes each as a mapping of its public
+	/// properties, which site generators cannot read as a date or version.
+	/// </summary>
+	/// <remarks>
+	/// Dates are written plain in ISO 8601, so YAML readers such as Jekyll resolve them as timestamps. A time
+	/// is double-quoted, since YAML 1.1 reads a plain <c>10:30:00</c> as a base-60 number. A version is written
+	/// as a string, which quotes one such as <c>1.2</c> that would otherwise read back as a number. Every
+	/// format is culture-invariant, unlike YamlDotNet's own <c>DateOnly</c> and <c>TimeOnly</c> converters.
+	/// </remarks>
+	private sealed class InvariantScalarTypeConverter : IYamlTypeConverter
+	{
+		public bool Accepts(Type type) =>
+			type == typeof(DateTimeOffset)
+			|| type == typeof(System.Version)
+#if NET6_0_OR_GREATER
+			|| type == typeof(DateOnly)
+			|| type == typeof(TimeOnly)
+#endif
+			;
+
+		// The converter is registered on the serializer only; reading leaves these values as the scalars written.
+		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
+			throw new NotSupportedException("This converter only writes values.");
+
+		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+		{
+			CultureInfo culture = CultureInfo.InvariantCulture;
+			switch (value)
+			{
+				case DateTimeOffset dateTimeOffset:
+					emitter.Emit(new Scalar(dateTimeOffset.ToString("O", culture)));
+					break;
+#if NET6_0_OR_GREATER
+				case DateOnly date:
+					emitter.Emit(new Scalar(date.ToString("yyyy-MM-dd", culture)));
+					break;
+				case TimeOnly time:
+					emitter.Emit(new Scalar(null, null, time.ToString("HH:mm:ss.FFFFFFF", culture), ScalarStyle.DoubleQuoted, true, true));
+					break;
+#endif
+				default:
+					// A Version, which Accepts leaves as the only other type.
+					serializer(value?.ToString(), typeof(string));
+					break;
+			}
+		}
 	}
 
 	/// <summary>
