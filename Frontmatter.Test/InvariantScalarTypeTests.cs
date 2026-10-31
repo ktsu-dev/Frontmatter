@@ -86,6 +86,30 @@ public class InvariantScalarTypeTests
 	}
 
 	[TestMethod]
+	public void ReplaceFrontmatter_DateTimeOffset_IsWrittenAsAnIsoTimestamp()
+	{
+		string result = Frontmatter.ReplaceFrontmatter("---\ntitle: Hello\n---\nBody\n", new() { ["date"] = Date });
+
+		Assert.AreEqual("---\ndate: 2024-01-15T10:30:00.0000000+02:00\n---\nBody\n", result.ReplaceLineEndings("\n"));
+	}
+
+	[TestMethod]
+	public void SerializeFrontmatter_Version_IsWrittenAsItsText()
+	{
+		string yaml = Frontmatter.SerializeFrontmatter(new() { ["version"] = new Version(2, 0, 1) });
+
+		Assert.AreEqual("version: 2.0.1", yaml.ReplaceLineEndings("\n"));
+	}
+
+	[TestMethod]
+	public void AddFrontmatter_ValuesInAList_AreWrittenAsScalars()
+	{
+		string result = Frontmatter.AddFrontmatter("Body\n", new() { ["dates"] = new List<object> { new DateOnly(2024, 1, 15), new Version(2, 0, 1) } });
+
+		Assert.AreEqual("---\ndates:\n- 2024-01-15\n- 2.0.1\n---\nBody\n", result.ReplaceLineEndings("\n"));
+	}
+
+	[TestMethod]
 	public void SerializeYamlObject_NestedValues_AreWrittenAsScalars()
 	{
 		string yaml = YamlSerializer.SerializeYamlObject(new() { ["release"] = new Dictionary<string, object> { ["on"] = new DateOnly(2024, 1, 15), ["version"] = new Version(2, 0, 1) } });
