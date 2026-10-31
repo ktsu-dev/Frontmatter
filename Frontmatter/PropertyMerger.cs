@@ -38,6 +38,16 @@ internal static class PropertyMerger
 		// Create a new dictionary to hold the merged properties
 		Dictionary<string, object> mergedFrontmatter = [];
 
+		// Where each written key sits in the input: a key that keeps its own name keeps its own position,
+		// and a key that several members were merged into takes the position of the first of them.
+		Dictionary<string, int> inputPositions = [];
+		for (int i = 0; i < frontmatterKeys.Length; i++)
+		{
+			inputPositions[frontmatterKeys[i]] = i;
+		}
+
+		Dictionary<string, int> outputPositions = [];
+
 		// Group properties by their canonical names and merge values
 		foreach (IGrouping<string, string> group in propertyMappings.GroupBy(x => x.Value, x => x.Key))
 		{
@@ -49,10 +59,24 @@ internal static class PropertyMerger
 				? originalKeys[0]
 				: group.Key;
 
+			HashSet<string> keysBefore = [.. mergedFrontmatter.Keys];
 			MergePropertyGroup(frontmatter, mergedFrontmatter, canonicalKey, originalKeys);
+
+			int groupPosition = originalKeys.Min(key => inputPositions[key]);
+			foreach (string writtenKey in mergedFrontmatter.Keys.Where(key => !keysBefore.Contains(key)))
+			{
+				outputPositions[writtenKey] = originalKeys.Contains(writtenKey) ? inputPositions[writtenKey] : groupPosition;
+			}
 		}
 
-		return mergedFrontmatter;
+		// Groups are emitted one at a time, which pulls a later member up next to the first one even when the
+		// two are kept apart. Put the keys back in input order, so FrontmatterOrder.AsIs keeps the document's
+		// order and a second run sees the same insertion order as the first.
+		return mergedFrontmatter
+			.Select((pair, index) => (pair, index))
+			.OrderBy(entry => outputPositions[entry.pair.Key])
+			.ThenBy(entry => entry.index)
+			.ToDictionary(entry => entry.pair.Key, entry => entry.pair.Value);
 	}
 
 	// Not cached: the canonical name depends on the strategy and, for Aggressive and Maximum, on the
