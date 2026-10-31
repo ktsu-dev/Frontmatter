@@ -67,7 +67,7 @@ public static class YamlSerializer
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithQuotingNecessaryStrings(quoteYaml1_1Strings: true)
-		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next, quoteCallerLookalikes: true))
+		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
 		.Build();
 
 	/// <summary>
@@ -421,14 +421,15 @@ public static class YamlSerializer
 	/// changed on the next read.
 	/// </summary>
 	/// <remarks>
-	/// For values a caller supplies it also double-quotes strings that <c>quoteYaml1_1Strings</c> leaves plain
-	/// although a reader would not take them for strings. That flag replaces YAML 1.2's float pattern with
+	/// It also double-quotes strings that a reader would not take for strings although
+	/// <c>quoteYaml1_1Strings</c> leaves them plain. That flag replaces YAML 1.2's float pattern with
 	/// YAML 1.1's, which needs a <c>.</c> and a signed exponent, so <c>1e3</c> or <c>2e10</c> would be read back
 	/// as numbers by this library and by js-yaml (#228). It also leaves YAML 1.1's value indicator <c>=</c> and
 	/// merge indicator <c>&lt;&lt;</c> plain, which PyYAML's <c>safe_load</c> cannot construct, so it rejects the
-	/// whole header (#230).
+	/// whole header (#230). The document serializer already quotes the float spellings, and a plain
+	/// <c>=</c> or <c>&lt;&lt;</c> it writes quoted only stops a YAML 1.1 reader from failing on it.
 	/// </remarks>
-	private sealed class EdgeWhitespaceQuotingEventEmitter(IEventEmitter nextEmitter, bool quoteCallerLookalikes = false) : ChainedEventEmitter(nextEmitter)
+	private sealed class EdgeWhitespaceQuotingEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
 	{
 		private static readonly char[] NormalizedLineBreaks = ['\r', '\u0085'];
 
@@ -442,7 +443,7 @@ public static class YamlSerializer
 		{
 			if (eventInfo.Source.Value is string { Length: > 0 } text
 				&& (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1]) || text.IndexOfAny(NormalizedLineBreaks) >= 0
-					|| (quoteCallerLookalikes && IsCallerLookalike(text))))
+					|| IsNonStringLookalike(text)))
 			{
 				eventInfo.Style = ScalarStyle.DoubleQuoted;
 			}
@@ -450,7 +451,7 @@ public static class YamlSerializer
 			base.Emit(eventInfo, emitter);
 		}
 
-		private static bool IsCallerLookalike(string text) =>
+		private static bool IsNonStringLookalike(string text) =>
 			text is "=" or MergeKey || Yaml12Float.IsMatch(text);
 	}
 
