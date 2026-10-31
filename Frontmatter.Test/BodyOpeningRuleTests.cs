@@ -88,6 +88,56 @@ public class BodyOpeningRuleTests
 	[TestMethod]
 	[DataRow("\r\n", DisplayName = "CRLF")]
 	[DataRow("\n", DisplayName = "LF")]
+	public void RemoveFrontmatter_BodyOpensWithARule_LeavesNoHeader(string nl)
+	{
+		string input = WithHeader(nl);
+
+		string result = Frontmatter.RemoveFrontmatter(input);
+
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
+		Assert.AreEqual(WithoutHeader(nl), result);
+		Assert.AreEqual(result, Frontmatter.RemoveFrontmatter(result));
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	public void ReplaceFrontmatter_WithNoProperties_BodyOpensWithARule_LeavesNoHeader(string nl)
+	{
+		string result = Frontmatter.ReplaceFrontmatter(WithHeader(nl), []);
+
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
+		Assert.AreEqual(WithoutHeader(nl), result);
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	public void RemoveFrontmatter_BodyOpensWithANonYamlRulePassage_KeepsTheWholeBody(string nl)
+	{
+		string input = Lines(nl, "---", "title: A", "---", string.Empty, "---", string.Empty, "Intro paragraph.", string.Empty, "---", string.Empty, "More text.");
+
+		string result = Frontmatter.RemoveFrontmatter(input);
+
+		Assert.IsFalse(Frontmatter.HasFrontmatter(result));
+		Assert.AreEqual(Frontmatter.ExtractBody(input), Frontmatter.ExtractBody(result));
+		Dictionary<string, object> added = Frontmatter.ExtractFrontmatter(Frontmatter.AddFrontmatter(result, NewTitle())) ?? [];
+		Assert.AreEqual("New", added["title"]);
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
+	public void RemoveFrontmatter_BodyWithoutALeadingRule_HasNoLeadingBlankLine(string nl)
+	{
+		string input = Lines(nl, "---", "title: A", "---", string.Empty, "Hello", string.Empty, "---", "after a rule");
+
+		Assert.AreEqual(Lines(nl, "Hello", string.Empty, "---", "after a rule"), Frontmatter.RemoveFrontmatter(input));
+	}
+
+	[TestMethod]
+	[DataRow("\r\n", DisplayName = "CRLF")]
+	[DataRow("\n", DisplayName = "LF")]
 	public void AddFrontmatter_BodyOpensWithARule_WritesOneBlankLineBeforeIt(string nl)
 	{
 		string result = Frontmatter.AddFrontmatter(WithHeader(nl), Tags());

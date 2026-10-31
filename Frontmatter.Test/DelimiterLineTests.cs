@@ -113,7 +113,7 @@ public class DelimiterLineTests
 		string input = $"---{Nl}title: A{Nl}---{Nl}---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}";
 
 		Assert.AreEqual($"---{Nl}Important paragraph{Nl}{Nl}---{Nl}More", Frontmatter.ExtractBody(input));
-		Assert.AreEqual($"---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}", Frontmatter.RemoveFrontmatter(input));
+		Assert.AreEqual($"{Nl}---{Nl}Important paragraph{Nl}{Nl}---{Nl}More{Nl}", Frontmatter.RemoveFrontmatter(input));
 	}
 
 	[TestMethod]

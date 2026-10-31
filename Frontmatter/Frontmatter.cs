@@ -347,7 +347,12 @@ public static class Frontmatter
 		}
 
 		ExtractFrontmatterObjects(input, out string body);
-		return BodySection(body, NewLineOf(input));
+		string nl = NewLineOf(input);
+		string section = BodySection(body, nl);
+
+		// A body that opens with a --- … --- passage would read back as a header once it is the first
+		// line, so it keeps one blank line ahead of it, as it does when written under a header.
+		return HasFrontmatter(section) ? nl + section : section;
 	}
 
 	/// <summary>
