@@ -55,12 +55,8 @@ public static class YamlSerializer
 	/// <summary>
 	/// Reusable serializer instance
 	/// </summary>
-	private static readonly ISerializer Serializer = new SerializerBuilder()
-		.WithNamingConvention(NullNamingConvention.Instance)
-		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
+	private static readonly ISerializer Serializer = CreateSerializerBuilder()
 		.WithQuotingNecessaryStrings()
-		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
-		.WithTypeConverter(new InvariantScalarTypeConverter())
 		.Build();
 
 	/// <summary>
@@ -69,12 +65,20 @@ public static class YamlSerializer
 	/// see them as strings too. Values read from a document are not written with it: a plain <c>yes</c> is
 	/// read as the string "yes", and quoting it would change what a YAML 1.1 reader sees in the other direction.
 	/// </summary>
-	private static readonly ISerializer CallerValueSerializer = new SerializerBuilder()
+	private static readonly ISerializer CallerValueSerializer = CreateSerializerBuilder()
+		.WithQuotingNecessaryStrings(quoteYaml1_1Strings: true)
+		.Build();
+
+	/// <summary>
+	/// Creates the builder both serializers start from, so an option that one of them needs, such as the
+	/// invariant scalar converter, cannot be left off the other. Only string quoting differs between them.
+	/// </summary>
+	/// <returns>A serializer builder with every option the two serializers share.</returns>
+	private static SerializerBuilder CreateSerializerBuilder() => new SerializerBuilder()
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
-		.WithQuotingNecessaryStrings(quoteYaml1_1Strings: true)
 		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
-		.Build();
+		.WithTypeConverter(new InvariantScalarTypeConverter());
 
 	/// <summary>
 	/// Attempts to parse a YAML string into a dictionary object.
