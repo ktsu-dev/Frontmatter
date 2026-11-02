@@ -325,9 +325,11 @@ public static class Frontmatter
 			return RemoveFrontmatter(input);
 		}
 
-		ExtractFrontmatterObjects(input, out string body);
+		// Values the existing header already holds are written as read from the document, so only the
+		// values the caller changed or added get the YAML 1.1 quoting caller values need.
+		Dictionary<string, object> existing = CombineAllFrontmatterObjects(ExtractFrontmatterObjects(input, out string body));
 		string nl = NewLineOf(input);
-		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeCallerValues(frontmatter).Trim(), nl);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing).Trim(), nl);
 		return WithHeader(yamlFrontmatter, body, nl);
 	}
 

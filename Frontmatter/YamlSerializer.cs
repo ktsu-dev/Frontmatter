@@ -199,6 +199,76 @@ public static class YamlSerializer
 		input == null || input.Count == 0 ? string.Empty : CallerValueSerializer.Serialize(input);
 
 	/// <summary>
+	/// Serializes properties for a document that already has a header, writing each value the header already
+	/// holds unchanged the way a value read from a document is written, and every other value the way a
+	/// caller-supplied value is written.
+	/// </summary>
+	/// <remarks>
+	/// A value read from a document is not given YAML 1.1 quoting, so rewriting a header the caller only
+	/// partly changed keeps <c>published: no</c> or <c>last_seen: 12:30</c> as written instead of turning
+	/// them into strings. A value is treated as unchanged when it serializes exactly as the header's value
+	/// for the same key does.
+	/// </remarks>
+	/// <param name="input">The dictionary to serialize.</param>
+	/// <param name="documentValues">The properties the document's existing header holds.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues)
+	{
+		if (input == null || input.Count == 0)
+		{
+			return string.Empty;
+		}
+
+		if (documentValues == null || documentValues.Count == 0)
+		{
+			return CallerValueSerializer.Serialize(input);
+		}
+
+		// Consecutive keys written by the same serializer are serialized together, keeping the caller's key order.
+		System.Text.StringBuilder yaml = new();
+		Dictionary<string, object> run = [];
+		bool runIsFromDocument = false;
+		foreach (KeyValuePair<string, object> property in input)
+		{
+			bool fromDocument = IsUnchangedDocumentValue(property.Key, property.Value, documentValues);
+			if (run.Count > 0 && fromDocument != runIsFromDocument)
+			{
+				yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
+				run = [];
+			}
+
+			runIsFromDocument = fromDocument;
+			run[property.Key] = property.Value;
+		}
+
+		yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
+		return yaml.ToString();
+	}
+
+	/// <summary>
+	/// Reports whether a value is the one the document's header already holds for its key.
+	/// </summary>
+	/// <param name="key">The property name.</param>
+	/// <param name="value">The value about to be written.</param>
+	/// <param name="documentValues">The properties the document's existing header holds.</param>
+	/// <returns>true if the header holds the key and its value serializes the same way; otherwise, false.</returns>
+	private static bool IsUnchangedDocumentValue(string key, object value, IReadOnlyDictionary<string, object> documentValues)
+	{
+		if (!documentValues.TryGetValue(key, out object? documentValue))
+		{
+			return false;
+		}
+
+		if (ReferenceEquals(value, documentValue))
+		{
+			return true;
+		}
+
+		return Serializer.Serialize(new Dictionary<string, object> { [key] = value })
+			== Serializer.Serialize(new Dictionary<string, object> { [key] = documentValue });
+	}
+
+	/// <summary>
 	/// Creates a deep clone of a value, handling nested dictionaries and collections.
 	/// </summary>
 	private static object DeepCloneValue(object value)
