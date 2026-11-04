@@ -2,6 +2,19 @@
 
 Changes since v1.4.5:
 
+- Keep values a header already holds as written when the header is rewritten [patch] (#237) (matt-edmondson)
+- Insert a double or decimal into the header without dropping its comments [patch] (#236) (matt-edmondson)
+- Resolve only a plain \<\< as a YAML merge key [patch] (#232) (matt-edmondson)
+- Quote caller strings that read back as floats, = or \<\< [patch] (#231) (matt-edmondson)
+- Keep keys in input order when CombineFrontmatter merges them [patch] (#227) (matt-edmondson)
+- Give the caller-value serializer the invariant scalar converter [patch] (#226) (matt-edmondson)
+- Keep a body that opens with a rule passage out of the header in RemoveFrontmatter [patch] (matt-edmondson)
+- Drop the converter's unused read path to meet SonarCloud's new-code coverage gate (Claude)
+- Split ResolveMergeKeys and assert booleans directly, per SonarCloud (Claude)
+- Write DateTimeOffset, DateOnly, TimeOnly and Version values as one scalar [patch] (Claude)
+- Resolve YAML merge keys instead of returning a literal "\<\<" property [patch] (Claude)
+- Merge remote-tracking branch 'origin/main' into fix/188-quote-yaml11-lookalikes (matt-edmondson)
+- Quote caller strings that YAML 1.1 reads as booleans or numbers [patch] (Claude)
 - Keep the header as written when AddFrontmatter adds no new key [patch] (Claude)
 - Write the body after an inserted key as a rebuilt header writes it (Claude)
 - Merge main into fix/170-add-keeps-header-text (Claude)
