@@ -38,6 +38,13 @@ public static class YamlSerializer
 	private const string MergeKey = "<<";
 
 	/// <summary>
+	/// Stands in for a quoted <c>"&lt;&lt;"</c> scalar while a block is deserialized. Only a plain <c>&lt;&lt;</c>
+	/// is the merge key; a quoted one is an ordinary string, but the deserialized dictionary no longer records
+	/// how a key was written. The two noncharacters keep the stand-in from matching any key a document holds.
+	/// </summary>
+	private const string QuotedMergeKey = "\uFDD0<<\uFDD1";
+
+	/// <summary>
 	/// Reusable deserializer instance
 	/// </summary>
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder()
@@ -106,7 +113,7 @@ public static class YamlSerializer
 		{
 			// Simple approach with direct deserializer
 			// A document with no content (a comment only, ~ or null) deserializes to null
-			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(input);
+			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(new QuotedMergeKeyParser(new Parser(new StringReader(input))));
 			if (rawData is null)
 			{
 				return false;
@@ -238,6 +245,11 @@ public static class YamlSerializer
 			throw new InvalidOperationException($"The YAML expands to more than {MaxExpandedValues} values.");
 		}
 
+		if (value is QuotedMergeKey)
+		{
+			return MergeKey;
+		}
+
 		if (value is not System.Collections.IEnumerable or string)
 		{
 			// A null stays null so it is written back as a null rather than as an empty string. The
@@ -351,10 +363,36 @@ public static class YamlSerializer
 	/// block is reported as unreadable instead with an <see cref="InvalidOperationException"/>, and the
 	/// callers leave it alone.
 	/// </remarks>
-	private static string ScalarKey(object key) =>
-		key is System.Collections.IEnumerable and not string
-			? throw new InvalidOperationException("The YAML contains a key that is not a scalar.")
-			: key.ToString()!;
+	private static string ScalarKey(object key) => key switch
+	{
+		QuotedMergeKey => MergeKey,
+		System.Collections.IEnumerable and not string => throw new InvalidOperationException("The YAML contains a key that is not a scalar."),
+		_ => key.ToString()!,
+	};
+
+	/// <summary>
+	/// Replaces a single- or double-quoted <c>&lt;&lt;</c> scalar with <see cref="QuotedMergeKey"/>, so that
+	/// <see cref="ResolveMergeKeys"/> resolves only a plain <c>&lt;&lt;</c> as a merge, as YAML 1.1, PyYAML and
+	/// js-yaml do. The stand-in is turned back into <c>&lt;&lt;</c> when the block is converted.
+	/// </summary>
+	private sealed class QuotedMergeKeyParser(IParser parser) : IParser
+	{
+		public ParsingEvent? Current { get; private set; }
+
+		public bool MoveNext()
+		{
+			if (!parser.MoveNext())
+			{
+				Current = null;
+				return false;
+			}
+
+			Current = parser.Current is Scalar { Value: MergeKey, Style: not (ScalarStyle.Plain or ScalarStyle.Any) } scalar
+				? new Scalar(scalar.Anchor, scalar.Tag, QuotedMergeKey, scalar.Style, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End)
+				: parser.Current;
+			return true;
+		}
+	}
 
 	/// <summary>
 	/// Tracks one block's conversion: the containers on the path being converted, to find a cycle, and
