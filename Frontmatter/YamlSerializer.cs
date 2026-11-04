@@ -4,6 +4,7 @@ namespace ktsu.Frontmatter;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -423,20 +424,39 @@ public static class YamlSerializer
 	/// block scalar, whose line breaks all read back as <c>\n</c>. Without this the value would come back
 	/// changed on the next read.
 	/// </summary>
+	/// <remarks>
+	/// It also double-quotes strings that a reader would not take for strings although
+	/// <c>quoteYaml1_1Strings</c> leaves them plain. That flag replaces YAML 1.2's float pattern with
+	/// YAML 1.1's, which needs a <c>.</c> and a signed exponent, so <c>1e3</c> or <c>2e10</c> would be read back
+	/// as numbers by this library and by js-yaml (#228). It also leaves YAML 1.1's value indicator <c>=</c> and
+	/// merge indicator <c>&lt;&lt;</c> plain, which PyYAML's <c>safe_load</c> cannot construct, so it rejects the
+	/// whole header (#230). The document serializer already quotes the float spellings, and a plain
+	/// <c>=</c> or <c>&lt;&lt;</c> it writes quoted only stops a YAML 1.1 reader from failing on it.
+	/// </remarks>
 	private sealed class EdgeWhitespaceQuotingEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
 	{
 		private static readonly char[] NormalizedLineBreaks = ['\r', '\u0085'];
 
+		/// <summary>
+		/// The YAML 1.2 core schema's float pattern, without the <c>.inf</c> and <c>.nan</c> spellings, which
+		/// the YAML 1.1 quoting already covers.
+		/// </summary>
+		private static readonly Regex Yaml12Float = new(@"^[-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
 		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
 		{
 			if (eventInfo.Source.Value is string { Length: > 0 } text
-				&& (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1]) || text.IndexOfAny(NormalizedLineBreaks) >= 0))
+				&& (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[^1]) || text.IndexOfAny(NormalizedLineBreaks) >= 0
+					|| IsNonStringLookalike(text)))
 			{
 				eventInfo.Style = ScalarStyle.DoubleQuoted;
 			}
 
 			base.Emit(eventInfo, emitter);
 		}
+
+		private static bool IsNonStringLookalike(string text) =>
+			text is "=" or MergeKey || Yaml12Float.IsMatch(text);
 	}
 
 	/// <summary>
