@@ -223,7 +223,7 @@ public static class Frontmatter
 
 			// Adding keys to a single header does not need the header rebuilt, which would drop its comments
 			// and rewrite its formatting, so the new keys are written in front of its closing delimiter.
-			if (TryInsertIntoHeader(input, existingProperties, frontmatter, combined, out string? inserted))
+			if (TryInsertIntoHeader(input, existingProperties, frontmatter, out string? inserted))
 			{
 				return inserted;
 			}
@@ -244,20 +244,19 @@ public static class Frontmatter
 	/// Only a document with a single frontmatter block that already holds properties qualifies: stacked
 	/// blocks have to be folded into one, and an empty placeholder header is replaced. Keys the header already has are left out, as <see cref="CombineFrontmatterObjects"/> keeps
 	/// the existing value, so when the header already has every key nothing is inserted and it is kept as written. The body is written as a rebuilt header would write it. The result is read back,
-	/// and it is used only when it holds exactly <paramref name="combined"/> and the original body; anything
+	/// and it is used only when it holds exactly the existing properties plus the added ones, as the reader reads
+	/// their written text back, and the original body; anything
 	/// else, such as a header written as a flow mapping, falls back to rebuilding the header.
 	/// </remarks>
 	/// <param name="input">The document, which has frontmatter that could be read.</param>
 	/// <param name="existing">The properties the document's header already holds.</param>
 	/// <param name="frontmatter">The properties to add.</param>
-	/// <param name="combined">The properties the header must hold afterwards.</param>
 	/// <param name="result">The document with the new properties inserted, when this returns true.</param>
 	/// <returns>True if the properties could be inserted into the header as written, false otherwise.</returns>
 	private static bool TryInsertIntoHeader(
 		string input,
 		Dictionary<string, object> existing,
 		Dictionary<string, object> frontmatter,
-		Dictionary<string, object> combined,
 		[NotNullWhen(true)] out string? result)
 	{
 		result = null;
@@ -287,7 +286,26 @@ public static class Frontmatter
 		}
 
 		string nl = NewLineOf(input);
-		string addedYaml = added.Count == 0 ? string.Empty : WithNewLines(YamlSerializer.SerializeCallerValues(added).Trim(), nl) + nl;
+		string addedText = added.Count == 0 ? string.Empty : YamlSerializer.SerializeCallerValues(added).Trim();
+		string addedYaml = added.Count == 0 ? string.Empty : WithNewLines(addedText, nl) + nl;
+
+		// The header is read back by the same reader as the candidate, so the expected properties are built from
+		// the added keys as that reader sees their written text rather than from the caller's objects: a double
+		// that isn't exact in float32 or a decimal with a trailing zero reads back differently from the value the
+		// caller passed, and comparing against the raw value would reject every such insert.
+		Dictionary<string, object> expected = new(existing);
+		if (added.Count > 0)
+		{
+			if (!YamlSerializer.TryParseYamlObject(addedText, out Dictionary<string, object>? addedParsed))
+			{
+				return false;
+			}
+
+			foreach (KeyValuePair<string, object> property in addedParsed)
+			{
+				expected[property.Key] = property.Value;
+			}
+		}
 		int at = lines[close].Start;
 		string closingLine = input[at..lines[close].End].TrimEnd();
 
@@ -300,7 +318,7 @@ public static class Frontmatter
 			|| candidateBlocks.Count != 1
 			|| TrimBody(candidateBody) != TrimBody(body)
 			|| !YamlSerializer.TryParseYamlObject(candidateBlocks[0].Trim(), out Dictionary<string, object>? parsed)
-			|| YamlSerializer.SerializeYamlObject(parsed) != YamlSerializer.SerializeYamlObject(combined))
+			|| YamlSerializer.SerializeYamlObject(parsed) != YamlSerializer.SerializeYamlObject(expected))
 		{
 			return false;
 		}
