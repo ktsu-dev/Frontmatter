@@ -85,8 +85,9 @@ public static class Frontmatter
 		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out string body, out bool hasUnreadableBlock);
 
 		// A block that could not be parsed would be dropped from the rebuilt header while the body still
-		// starts after it, so the document is left alone rather than losing that block's text.
-		if (frontmatterObjects.Count == 0 || hasUnreadableBlock)
+		// starts after it, so the document is left alone rather than losing that block's text. A tag such as
+		// R Markdown's !r is not in the values read, so a rebuilt header would lose it the same way.
+		if (frontmatterObjects.Count == 0 || hasUnreadableBlock || HeaderHoldsDroppedTag(input))
 		{
 			// Cache the original content since no processing was needed
 			ProcessedFrontmatterCache.Add(cacheKey, input);
@@ -332,7 +333,11 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <param name="frontmatter">The new frontmatter properties.</param>
-	/// <returns>A string containing the markdown document with replaced frontmatter.</returns>
+	/// <returns>
+	/// A string containing the markdown document with replaced frontmatter. When the existing header holds a
+	/// tag that reading drops, such as R Markdown's <c>!r</c>, the document is returned unchanged rather than
+	/// losing the tag; removing the header first replaces it regardless.
+	/// </returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
 	public static string ReplaceFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
@@ -341,6 +346,13 @@ public static class Frontmatter
 		if (frontmatter == null || frontmatter.Count == 0)
 		{
 			return RemoveFrontmatter(input);
+		}
+
+		// A tag such as R Markdown's !r is not in the values read from the header, so rewriting the header
+		// would silently drop it. The document is left alone instead.
+		if (HeaderHoldsDroppedTag(input))
+		{
+			return input;
 		}
 
 		// Values the existing header already holds are written as read from the document, so only the
@@ -479,6 +491,16 @@ public static class Frontmatter
 
 		return frontmatterObjects;
 	}
+
+	/// <summary>
+	/// Reports whether any of a document's frontmatter blocks holds a tag that reading drops, such as
+	/// R Markdown's <c>!r</c>, so a rebuilt header would lose it.
+	/// </summary>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <returns>true if a frontmatter block holds a tag that reading drops; otherwise, false.</returns>
+	private static bool HeaderHoldsDroppedTag(string input) =>
+		TrySplitFrontmatterBlocks(input, out List<string> blocks, out _)
+		&& blocks.Any(block => YamlSerializer.HoldsDroppedTag(block.Trim()));
 
 	/// <summary>
 	/// Folds frontmatter objects into one, in document order, so an earlier block wins a repeated key.
