@@ -323,54 +323,27 @@ public static class YamlSerializer
 			return quoted;
 		}
 
-		HashSet<string> seen = new(StringComparer.Ordinal);
 		try
 		{
 			Parser parser = new(new StringReader(input));
-			int depth = 0;
-			bool expectingKey = true;
-			string? key = null;
-			while (parser.MoveNext())
+			parser.Consume<StreamStart>();
+			if (!parser.TryConsume<DocumentStart>(out _) || !parser.TryConsume<MappingStart>(out _))
 			{
-				ParsingEvent current = parser.Current!;
-				if (depth == 1)
+				return quoted;
+			}
+
+			HashSet<string> seen = new(StringComparer.Ordinal);
+			while (!parser.TryConsume<MappingEnd>(out _))
+			{
+				// A complex (mapping or sequence) key has no name to record; its value is skipped like any other.
+				string? key = parser.Current is Scalar keyScalar ? keyScalar.Value : null;
+				parser.SkipThisAndNestedEvents();
+				if (key != null && seen.Add(key) && parser.Current is Scalar valueScalar && IsQuotedString(valueScalar))
 				{
-					if (current is MappingEnd)
-					{
-						break;
-					}
-
-					if (expectingKey)
-					{
-						key = current is Scalar keyScalar ? keyScalar.Value : null;
-						expectingKey = false;
-					}
-					else
-					{
-						if (key != null && seen.Add(key)
-							&& current is Scalar { Style: ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted } valueScalar
-							&& valueScalar.Tag.IsEmpty)
-						{
-							quoted[key] = valueScalar.Value;
-						}
-
-						expectingKey = true;
-					}
+					quoted[key] = valueScalar.Value;
 				}
 
-				if (current is MappingStart or SequenceStart)
-				{
-					if (depth == 0 && current is not MappingStart)
-					{
-						break;
-					}
-
-					depth++;
-				}
-				else if (current is MappingEnd or SequenceEnd)
-				{
-					depth--;
-				}
+				parser.SkipThisAndNestedEvents();
 			}
 		}
 		catch (YamlException)
@@ -380,6 +353,12 @@ public static class YamlSerializer
 
 		return quoted;
 	}
+
+	/// <summary>
+	/// Reports whether a scalar is written single- or double-quoted with no explicit tag, so it reads as a string.
+	/// </summary>
+	private static bool IsQuotedString(Scalar scalar) =>
+		scalar.Style is ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted && scalar.Tag.IsEmpty;
 
 	/// <summary>
 	/// Reports whether a value is a string the document's header wrote quoted.

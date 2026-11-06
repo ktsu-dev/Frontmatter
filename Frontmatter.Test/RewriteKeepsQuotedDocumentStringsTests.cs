@@ -93,8 +93,8 @@ public class RewriteKeepsQuotedDocumentStringsTests
 
 		string result = Frontmatter.CombineFrontmatter(input);
 
-		StringAssert.Contains(result, "published: \"no\"\n");
-		StringAssert.Contains(result, "draft: no\n");
+		Assert.Contains("published: \"no\"\n", result);
+		Assert.Contains("draft: no\n", result);
 	}
 
 	[TestMethod]

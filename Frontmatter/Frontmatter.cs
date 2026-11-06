@@ -497,9 +497,8 @@ public static class Frontmatter
 		}
 
 		HashSet<string> seen = new(StringComparer.Ordinal);
-		foreach (string block in blocks)
+		foreach (string section in blocks.Select(block => block.Trim()))
 		{
-			string section = block.Trim();
 			if (string.IsNullOrWhiteSpace(section)
 				|| !YamlSerializer.TryParseYamlObject(section, out Dictionary<string, object>? properties))
 			{
