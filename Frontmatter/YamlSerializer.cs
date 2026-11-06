@@ -223,8 +223,13 @@ public static class YamlSerializer
 	/// </remarks>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <param name="documentValues">The properties the document's existing header holds.</param>
+	/// <param name="quotedDocumentStrings">
+	/// The strings the header wrote as quoted scalars, by key (see <see cref="FindQuotedTopLevelStrings"/>).
+	/// Such a string is written the way a caller value is, even when unchanged, so a quoted <c>'no'</c> keeps
+	/// its quotes instead of becoming a plain <c>no</c> that a YAML 1.1 reader takes for a boolean.
+	/// </param>
 	/// <returns>A string containing the serialized YAML.</returns>
-	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues)
+	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string>? quotedDocumentStrings = null)
 	{
 		if (input == null || input.Count == 0)
 		{
@@ -242,7 +247,8 @@ public static class YamlSerializer
 		bool runIsFromDocument = false;
 		foreach (KeyValuePair<string, object> property in input)
 		{
-			bool fromDocument = IsUnchangedDocumentValue(property.Key, property.Value, documentValues);
+			bool fromDocument = IsUnchangedDocumentValue(property.Key, property.Value, documentValues)
+				&& !WasQuotedInDocument(property.Key, property.Value, documentValues, quotedDocumentStrings);
 			if (run.Count > 0 && fromDocument != runIsFromDocument)
 			{
 				yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
@@ -255,6 +261,126 @@ public static class YamlSerializer
 
 		yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
 		return yaml.ToString();
+	}
+
+	/// <summary>
+	/// Serializes properties rebuilt from a document's own headers, such as the combined header
+	/// <see cref="Frontmatter.CombineFrontmatter(string)"/> writes. Every value is written the way a value read
+	/// from a document is, except a string the headers wrote quoted, which keeps its quoting.
+	/// </summary>
+	/// <param name="input">The dictionary to serialize.</param>
+	/// <param name="documentValues">The properties the document's headers held before they were rebuilt.</param>
+	/// <param name="quotedDocumentStrings">The strings the headers wrote as quoted scalars, by key.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	internal static string SerializeDocumentValues(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string> quotedDocumentStrings)
+	{
+		if (input == null || input.Count == 0)
+		{
+			return string.Empty;
+		}
+
+		if (quotedDocumentStrings == null || quotedDocumentStrings.Count == 0)
+		{
+			return Serializer.Serialize(input);
+		}
+
+		System.Text.StringBuilder yaml = new();
+		Dictionary<string, object> run = [];
+		bool runIsQuoted = false;
+		foreach (KeyValuePair<string, object> property in input)
+		{
+			bool quoted = WasQuotedInDocument(property.Key, property.Value, documentValues, quotedDocumentStrings);
+			if (run.Count > 0 && quoted != runIsQuoted)
+			{
+				yaml.Append((runIsQuoted ? CallerValueSerializer : Serializer).Serialize(run));
+				run = [];
+			}
+
+			runIsQuoted = quoted;
+			run[property.Key] = property.Value;
+		}
+
+		yaml.Append((runIsQuoted ? CallerValueSerializer : Serializer).Serialize(run));
+		return yaml.ToString();
+	}
+
+	/// <summary>
+	/// Finds the top-level keys of a YAML mapping whose values are written as single- or double-quoted
+	/// scalars, which the parsed dictionary does not record.
+	/// </summary>
+	/// <remarks>
+	/// Only the first occurrence of a key counts, as <see cref="TryParseYamlObject"/> keeps only that one. A
+	/// scalar with an explicit tag is skipped, since it need not read as a string. Text that does not parse
+	/// as a mapping yields no keys.
+	/// </remarks>
+	/// <param name="input">The YAML text of one block.</param>
+	/// <returns>The quoted string values, by key.</returns>
+	internal static Dictionary<string, string> FindQuotedTopLevelStrings(string input)
+	{
+		Dictionary<string, string> quoted = new(StringComparer.Ordinal);
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return quoted;
+		}
+
+		try
+		{
+			Parser parser = new(new StringReader(input));
+			parser.Consume<StreamStart>();
+			if (!parser.TryConsume<DocumentStart>(out _) || !parser.TryConsume<MappingStart>(out _))
+			{
+				return quoted;
+			}
+
+			HashSet<string> seen = new(StringComparer.Ordinal);
+			while (!parser.TryConsume<MappingEnd>(out _))
+			{
+				// A complex (mapping or sequence) key has no name to record; its value is skipped like any other.
+				string? key = parser.Current is Scalar keyScalar ? keyScalar.Value : null;
+				parser.SkipThisAndNestedEvents();
+				if (key != null && seen.Add(key) && parser.Current is Scalar valueScalar && IsQuotedString(valueScalar))
+				{
+					quoted[key] = valueScalar.Value;
+				}
+
+				parser.SkipThisAndNestedEvents();
+			}
+		}
+		catch (YamlException)
+		{
+			quoted.Clear();
+		}
+
+		return quoted;
+	}
+
+	/// <summary>
+	/// Reports whether a scalar is written single- or double-quoted with no explicit tag, so it reads as a string.
+	/// </summary>
+	private static bool IsQuotedString(Scalar scalar) =>
+		scalar.Style is ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted && scalar.Tag.IsEmpty;
+
+	/// <summary>
+	/// Reports whether a value is a string the document's header wrote quoted.
+	/// </summary>
+	/// <remarks>
+	/// A key the header holds takes its quoting from the header's value for that key. A key the header does not
+	/// hold, such as one a rebuilt header renamed or merged its value into, counts as quoted when the header
+	/// quoted the same string under some key.
+	/// </remarks>
+	private static bool WasQuotedInDocument(string key, object value, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string>? quotedDocumentStrings)
+	{
+		if (value is not string text || quotedDocumentStrings == null || quotedDocumentStrings.Count == 0)
+		{
+			return false;
+		}
+
+		if (documentValues.ContainsKey(key))
+		{
+			return quotedDocumentStrings.TryGetValue(key, out string? quotedText) && string.Equals(quotedText, text, StringComparison.Ordinal);
+		}
+
+		return quotedDocumentStrings.Any(quotedString => string.Equals(quotedString.Value, text, StringComparison.Ordinal));
 	}
 
 	/// <summary>
