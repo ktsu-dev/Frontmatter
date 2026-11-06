@@ -94,6 +94,7 @@ public static class Frontmatter
 		}
 
 		Dictionary<string, object> combinedFrontmatterObject = CombineAllFrontmatterObjects(frontmatterObjects);
+		Dictionary<string, object> documentValues = new(combinedFrontmatterObject);
 
 		// Apply property merging if enabled
 		if (mergeStrategy != FrontmatterMergeStrategy.None)
@@ -114,7 +115,7 @@ public static class Frontmatter
 		}
 
 		string nl = NewLineOf(input);
-		string combinedFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim(), nl);
+		string combinedFrontmatter = WithNewLines(YamlSerializer.SerializeDocumentValues(combinedFrontmatterObject, documentValues, FindQuotedDocumentStrings(input)).Trim(), nl);
 
 		string result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
 
@@ -347,7 +348,7 @@ public static class Frontmatter
 		// values the caller changed or added get the YAML 1.1 quoting caller values need.
 		Dictionary<string, object> existing = CombineAllFrontmatterObjects(ExtractFrontmatterObjects(input, out string body));
 		string nl = NewLineOf(input);
-		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing).Trim(), nl);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing, FindQuotedDocumentStrings(input)).Trim(), nl);
 		return WithHeader(yamlFrontmatter, body, nl);
 	}
 
@@ -478,6 +479,44 @@ public static class Frontmatter
 		}
 
 		return frontmatterObjects;
+	}
+
+	/// <summary>
+	/// Finds the strings a document's frontmatter writes as quoted scalars, by key, so a rewritten header can
+	/// keep them quoted. A repeated key takes its quoting from the earliest block that holds it, the block whose
+	/// value <see cref="CombineAllFrontmatterObjects"/> keeps.
+	/// </summary>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <returns>The quoted string values, by key; empty when the document has no frontmatter.</returns>
+	private static Dictionary<string, string> FindQuotedDocumentStrings(string input)
+	{
+		Dictionary<string, string> quoted = new(StringComparer.Ordinal);
+		if (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out _))
+		{
+			return quoted;
+		}
+
+		HashSet<string> seen = new(StringComparer.Ordinal);
+		foreach (string block in blocks)
+		{
+			string section = block.Trim();
+			if (string.IsNullOrWhiteSpace(section)
+				|| !YamlSerializer.TryParseYamlObject(section, out Dictionary<string, object>? properties))
+			{
+				continue;
+			}
+
+			Dictionary<string, string> blockQuoted = YamlSerializer.FindQuotedTopLevelStrings(section);
+			foreach (string key in properties.Keys)
+			{
+				if (seen.Add(key) && blockQuoted.TryGetValue(key, out string? text))
+				{
+					quoted[key] = text;
+				}
+			}
+		}
+
+		return quoted;
 	}
 
 	/// <summary>
