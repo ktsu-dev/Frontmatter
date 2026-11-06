@@ -113,7 +113,7 @@ public static class YamlSerializer
 		{
 			// Simple approach with direct deserializer
 			// A document with no content (a comment only, ~ or null) deserializes to null
-			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(new QuotedMergeKeyParser(new Parser(new StringReader(input))));
+			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(new QuotedMergeKeyParser(new TagTolerantParser(new Parser(new StringReader(input)))));
 			if (rawData is null)
 			{
 				return false;
@@ -184,7 +184,7 @@ public static class YamlSerializer
 	{
 		try
 		{
-			object? value = Deserializer.Deserialize<object?>(input);
+			object? value = Deserializer.Deserialize<object?>(new TagTolerantParser(new Parser(new StringReader(input))));
 			return value is null or System.Collections.IDictionary { Count: 0 };
 		}
 		catch (Exception ex) when (ex is YamlException or InvalidOperationException or ArgumentException)
@@ -439,6 +439,114 @@ public static class YamlSerializer
 		System.Collections.IEnumerable and not string => throw new InvalidOperationException("The YAML contains a key that is not a scalar."),
 		_ => key.ToString()!,
 	};
+
+	/// <summary>
+	/// Reports whether a YAML document holds a tag that <see cref="TryParseYamlObject"/> drops while reading it,
+	/// such as R Markdown's <c>!r</c> or <c>!expr</c>, or <c>!!binary</c>, <c>!!set</c> or <c>!!omap</c>.
+	/// </summary>
+	/// <remarks>
+	/// Such a document can be read, but the values read from it no longer say what the tag said, so writing
+	/// them back would silently lose the tag. The core tags that only restate a node's kind or type
+	/// (<c>!!str</c>, <c>!!null</c>, <c>!!bool</c>, <c>!!int</c>, <c>!!float</c>, <c>!!seq</c>, <c>!!map</c> and the
+	/// non-specific <c>!</c>) are read faithfully, so they are not reported.
+	/// </remarks>
+	/// <param name="input">The YAML text.</param>
+	/// <returns>true if reading the document drops a tag; otherwise, false.</returns>
+	internal static bool HoldsDroppedTag(string input)
+	{
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return false;
+		}
+
+		try
+		{
+			Parser parser = new(new StringReader(input));
+			while (parser.MoveNext())
+			{
+				if (parser.Current is NodeEvent { Tag.IsEmpty: false } node && TagTolerantParser.KindOf(node.Tag.Value) == CoreTag.None)
+				{
+					return true;
+				}
+			}
+		}
+		catch (YamlException)
+		{
+			return false;
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// The core tags <see cref="TagTolerantParser"/> reads faithfully.
+	/// </summary>
+	private enum CoreTag
+	{
+		None,
+		String,
+		Null,
+		Scalar,
+		Collection,
+	}
+
+	/// <summary>
+	/// Removes the tags from a document's nodes, so YamlDotNet, which has no mapping for them, does not reject
+	/// the whole document with "Encountered an unresolved tag" (#243).
+	/// </summary>
+	/// <remarks>
+	/// <c>!!str</c> and the non-specific <c>!</c> make a scalar a string, as a quoted scalar is.
+	/// <c>!!null</c> makes it null. <c>!!bool</c>, <c>!!int</c> and <c>!!float</c> have the value resolved as a plain
+	/// scalar would be, and <c>!!seq</c> and <c>!!map</c> only restate the collection's kind. Any other tag is
+	/// dropped, so its node is read as the untagged scalar or collection it is written as.
+	/// <see cref="HoldsDroppedTag"/> reports a document that holds such a tag.
+	/// </remarks>
+	private sealed class TagTolerantParser(IParser parser) : IParser
+	{
+		private const string CoreTagPrefix = "tag:yaml.org,2002:";
+
+		public ParsingEvent? Current { get; private set; }
+
+		public bool MoveNext()
+		{
+			if (!parser.MoveNext())
+			{
+				Current = null;
+				return false;
+			}
+
+			Current = parser.Current switch
+			{
+				Scalar { Tag.IsEmpty: false } scalar => Untagged(scalar),
+				MappingStart { Tag.IsEmpty: false } mapping => new MappingStart(mapping.Anchor, TagName.Empty, mapping.IsImplicit, mapping.Style, mapping.Start, mapping.End),
+				SequenceStart { Tag.IsEmpty: false } sequence => new SequenceStart(sequence.Anchor, TagName.Empty, sequence.IsImplicit, sequence.Style, sequence.Start, sequence.End),
+				_ => parser.Current,
+			};
+			return true;
+		}
+
+		/// <summary>
+		/// Classifies a tag as one of the core tags read faithfully, or as one that is dropped.
+		/// </summary>
+		/// <param name="tag">The tag's full name, such as <c>tag:yaml.org,2002:str</c>.</param>
+		/// <returns>The kind of core tag, or <see cref="CoreTag.None"/> for a tag reading drops.</returns>
+		internal static CoreTag KindOf(string tag) => tag switch
+		{
+			"!" or CoreTagPrefix + "str" => CoreTag.String,
+			CoreTagPrefix + "null" => CoreTag.Null,
+			CoreTagPrefix + "bool" or CoreTagPrefix + "int" or CoreTagPrefix + "float" => CoreTag.Scalar,
+			CoreTagPrefix + "seq" or CoreTagPrefix + "map" => CoreTag.Collection,
+			_ => CoreTag.None,
+		};
+
+		private static Scalar Untagged(Scalar scalar) => KindOf(scalar.Tag.Value) switch
+		{
+			CoreTag.String => new Scalar(scalar.Anchor, TagName.Empty, scalar.Value, scalar.Style is ScalarStyle.Plain or ScalarStyle.Any ? ScalarStyle.DoubleQuoted : scalar.Style, false, true, scalar.Start, scalar.End),
+			CoreTag.Null => new Scalar(scalar.Anchor, TagName.Empty, string.Empty, ScalarStyle.Plain, true, false, scalar.Start, scalar.End),
+			CoreTag.Scalar => new Scalar(scalar.Anchor, TagName.Empty, scalar.Value, ScalarStyle.Plain, true, false, scalar.Start, scalar.End),
+			_ => new Scalar(scalar.Anchor, TagName.Empty, scalar.Value, scalar.Style, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End),
+		};
+	}
 
 	/// <summary>
 	/// Replaces a single- or double-quoted <c>&lt;&lt;</c> scalar with <see cref="QuotedMergeKey"/>, so that
