@@ -483,7 +483,10 @@ public static class YamlSerializer
 	/// <remarks>
 	/// Dates are written plain in ISO 8601, so YAML readers such as Jekyll resolve them as timestamps. A time
 	/// is double-quoted, since YAML 1.1 reads a plain <c>10:30:00</c> as a base-60 number. A version is written
-	/// as a string, which quotes one such as <c>1.2</c> that would otherwise read back as a number. Every
+	/// as a string, which quotes one such as <c>1.2</c> that would otherwise read back as a number. A
+	/// <c>TimeSpan</c> is double-quoted in its invariant <c>"c"</c> format for the same reason as a time (#225).
+	/// A <c>double</c> or <c>float</c> in exponent form gets a <c>.</c> in its mantissa, as in <c>1.0E+20</c>,
+	/// since YAML 1.1 reads <c>1E+20</c> as a string while YAML 1.2 reads either as a float (#225). Every
 	/// format is culture-invariant, unlike YamlDotNet's own <c>DateOnly</c> and <c>TimeOnly</c> converters.
 	/// </remarks>
 	private sealed class InvariantScalarTypeConverter : IYamlTypeConverter
@@ -491,6 +494,9 @@ public static class YamlSerializer
 		public bool Accepts(Type type) =>
 			type == typeof(DateTimeOffset)
 			|| type == typeof(System.Version)
+			|| type == typeof(TimeSpan)
+			|| type == typeof(double)
+			|| type == typeof(float)
 #if NET6_0_OR_GREATER
 			|| type == typeof(DateOnly)
 			|| type == typeof(TimeOnly)
@@ -509,6 +515,15 @@ public static class YamlSerializer
 				case DateTimeOffset dateTimeOffset:
 					emitter.Emit(new Scalar(dateTimeOffset.ToString("O", culture)));
 					break;
+				case TimeSpan duration:
+					emitter.Emit(new Scalar(null, null, duration.ToString("c", culture), ScalarStyle.DoubleQuoted, true, true));
+					break;
+				case double number:
+					emitter.Emit(new Scalar(FormatFloat(number, number.ToString("R", culture))));
+					break;
+				case float number:
+					emitter.Emit(new Scalar(FormatFloat(number, number.ToString("R", culture))));
+					break;
 #if NET6_0_OR_GREATER
 				case DateOnly date:
 					emitter.Emit(new Scalar(date.ToString("yyyy-MM-dd", culture)));
@@ -522,6 +537,32 @@ public static class YamlSerializer
 					serializer(value?.ToString(), typeof(string));
 					break;
 			}
+		}
+
+		/// <summary>
+		/// Writes a floating-point number so that YAML 1.1 and YAML 1.2 readers both read a float. Infinity and
+		/// NaN take YAML's own spellings. An exponent form such as <c>1E+20</c> gets <c>.0</c> after its mantissa,
+		/// since YAML 1.1's float pattern needs a <c>.</c>; the exponent is already signed.
+		/// </summary>
+		/// <param name="number">The number, widened to a double.</param>
+		/// <param name="text">The number's invariant round-trip text.</param>
+		/// <returns>The text to write as a plain scalar.</returns>
+		private static string FormatFloat(double number, string text)
+		{
+			if (double.IsNaN(number))
+			{
+				return ".nan";
+			}
+
+			if (double.IsInfinity(number))
+			{
+				return number > 0 ? ".inf" : "-.inf";
+			}
+
+			int exponent = text.IndexOfAny(['E', 'e']);
+			return exponent >= 0 && text.IndexOf('.', 0, exponent) < 0
+				? text[..exponent] + ".0" + text[exponent..]
+				: text;
 		}
 	}
 
