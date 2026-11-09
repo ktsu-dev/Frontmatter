@@ -74,8 +74,14 @@ public static class YamlSerializer
 	/// Creates the builder both serializers start from, so an option that one of them needs, such as the
 	/// invariant scalar converter, cannot be left off the other. Only string quoting differs between them.
 	/// </summary>
+	/// <remarks>
+	/// Aliases are disabled, so an object the caller passes under two keys is written in full under each
+	/// instead of as an anchor (<c>&amp;o0</c>) and an alias (<c>*o0</c>). A header is text people edit, and
+	/// readers such as Ruby's <c>YAML.safe_load</c> refuse aliases.
+	/// </remarks>
 	/// <returns>A serializer builder with every option the two serializers share.</returns>
 	private static SerializerBuilder CreateSerializerBuilder() => new SerializerBuilder()
+		.DisableAliases()
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
@@ -198,8 +204,9 @@ public static class YamlSerializer
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML.</returns>
+	/// <exception cref="ArgumentException">Thrown when a value contains itself.</exception>
 	public static string SerializeYamlObject(Dictionary<string, object> input) =>
-		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
+		input == null || input.Count == 0 ? string.Empty : Serialize(Serializer, input);
 
 	/// <summary>
 	/// Serializes properties a caller supplied to a YAML string, quoting strings that a YAML 1.1 reader
@@ -207,8 +214,51 @@ public static class YamlSerializer
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML.</returns>
+	/// <exception cref="ArgumentException">Thrown when a value contains itself.</exception>
 	internal static string SerializeCallerValues(Dictionary<string, object> input) =>
-		input == null || input.Count == 0 ? string.Empty : CallerValueSerializer.Serialize(input);
+		input == null || input.Count == 0 ? string.Empty : Serialize(CallerValueSerializer, input);
+
+	/// <summary>
+	/// Serializes properties, reporting a value that contains itself as an <see cref="ArgumentException"/>
+	/// naming its key. With aliases disabled such a value cannot be written, and YamlDotNet stops at its
+	/// recursion limit instead.
+	/// </summary>
+	/// <param name="serializer">The serializer to write with.</param>
+	/// <param name="input">The properties to serialize.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	/// <exception cref="ArgumentException">Thrown when a value contains itself.</exception>
+	private static string Serialize(ISerializer serializer, Dictionary<string, object> input)
+	{
+		try
+		{
+			return serializer.Serialize(input);
+		}
+		catch (MaximumRecursionLevelReachedException ex)
+		{
+			string key = input.Keys.FirstOrDefault(k => !CanSerialize(serializer, k, input[k])) ?? string.Empty;
+			throw new ArgumentException($"The value of frontmatter property '{key}' contains itself, so it cannot be written as YAML.", nameof(input), ex);
+		}
+	}
+
+	/// <summary>
+	/// Reports whether one property can be serialized without reaching the recursion limit.
+	/// </summary>
+	/// <param name="serializer">The serializer to write with.</param>
+	/// <param name="key">The property name.</param>
+	/// <param name="value">The property value.</param>
+	/// <returns>true if the property serializes; otherwise, false.</returns>
+	private static bool CanSerialize(ISerializer serializer, string key, object value)
+	{
+		try
+		{
+			serializer.Serialize(new Dictionary<string, object> { [key] = value });
+			return true;
+		}
+		catch (MaximumRecursionLevelReachedException)
+		{
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Serializes properties for a document that already has a header, writing each value the header already
@@ -233,7 +283,7 @@ public static class YamlSerializer
 
 		if (documentValues == null || documentValues.Count == 0)
 		{
-			return CallerValueSerializer.Serialize(input);
+			return Serialize(CallerValueSerializer, input);
 		}
 
 		// Consecutive keys written by the same serializer are serialized together, keeping the caller's key order.
@@ -245,7 +295,7 @@ public static class YamlSerializer
 			bool fromDocument = IsUnchangedDocumentValue(property.Key, property.Value, documentValues);
 			if (run.Count > 0 && fromDocument != runIsFromDocument)
 			{
-				yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
+				yaml.Append(Serialize(runIsFromDocument ? Serializer : CallerValueSerializer, run));
 				run = [];
 			}
 
@@ -253,7 +303,7 @@ public static class YamlSerializer
 			run[property.Key] = property.Value;
 		}
 
-		yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
+		yaml.Append(Serialize(runIsFromDocument ? Serializer : CallerValueSerializer, run));
 		return yaml.ToString();
 	}
 
@@ -276,8 +326,8 @@ public static class YamlSerializer
 			return true;
 		}
 
-		return Serializer.Serialize(new Dictionary<string, object> { [key] = value })
-			== Serializer.Serialize(new Dictionary<string, object> { [key] = documentValue });
+		return Serialize(Serializer, new Dictionary<string, object> { [key] = value })
+			== Serialize(Serializer, new Dictionary<string, object> { [key] = documentValue });
 	}
 
 	/// <summary>
