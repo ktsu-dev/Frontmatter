@@ -197,6 +197,7 @@ public static class Frontmatter
 	/// <param name="frontmatter">The frontmatter properties to add.</param>
 	/// <returns>A string containing the markdown document with added frontmatter.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
+	/// <exception cref="ArgumentException">Thrown when a frontmatter value contains itself.</exception>
 	public static string AddFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
 		Ensure.NotNull(input);
@@ -334,6 +335,7 @@ public static class Frontmatter
 	/// <param name="frontmatter">The new frontmatter properties.</param>
 	/// <returns>A string containing the markdown document with replaced frontmatter.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
+	/// <exception cref="ArgumentException">Thrown when a frontmatter value contains itself.</exception>
 	public static string ReplaceFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
 		Ensure.NotNull(input);
@@ -394,6 +396,7 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="frontmatter">The frontmatter dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML frontmatter.</returns>
+	/// <exception cref="ArgumentException">Thrown when a frontmatter value contains itself.</exception>
 	public static string SerializeFrontmatter(Dictionary<string, object> frontmatter) => frontmatter == null || frontmatter.Count == 0 ? string.Empty : YamlSerializer.SerializeCallerValues(frontmatter).Trim();
 
 	/// <summary>
