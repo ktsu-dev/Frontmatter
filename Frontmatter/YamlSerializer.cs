@@ -85,7 +85,8 @@ public static class YamlSerializer
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
-		.WithTypeConverter(new InvariantScalarTypeConverter());
+		.WithTypeConverter(new InvariantScalarTypeConverter())
+		.WithTypeConverter(new JsonValueTypeConverter());
 
 	/// <summary>
 	/// Attempts to parse a YAML string into a dictionary object.
@@ -721,6 +722,89 @@ public static class YamlSerializer
 			return exponent >= 0 && text.IndexOf('.', 0, exponent) < 0
 				? text[..exponent] + ".0" + text[exponent..]
 				: text;
+		}
+	}
+
+	/// <summary>
+	/// Writes a <c>System.Text.Json</c> <c>JsonElement</c> or <c>JsonNode</c> as the value it holds: an object as
+	/// a mapping, an array as a sequence, and a string, number, boolean or null as that scalar. Without it
+	/// YamlDotNet writes each as a mapping of its public properties, such as <c>ValueKind: String</c>, so a
+	/// <c>Dictionary&lt;string, object&gt;</c> deserialized from JSON loses every value (#241).
+	/// </summary>
+	/// <remarks>
+	/// The types are matched by name, so the library needs no <c>System.Text.Json</c> reference on .NET
+	/// Standard. The value's JSON text is read as YAML, of which JSON is a subset, and the result is written
+	/// like any other caller value, so a JSON string such as <c>"no"</c> is still quoted for YAML 1.1 readers.
+	/// </remarks>
+	private sealed class JsonValueTypeConverter : IYamlTypeConverter
+	{
+		private const string JsonElementTypeName = "System.Text.Json.JsonElement";
+
+		private const string JsonNodeTypeName = "System.Text.Json.Nodes.JsonNode";
+
+		/// <summary>
+		/// Reads the JSON text. It is the shared deserializer's configuration, so an unquoted number or
+		/// boolean becomes that CLR value and a quoted string stays a string.
+		/// </summary>
+		private static readonly IDeserializer JsonTextDeserializer = new DeserializerBuilder()
+			.WithNamingConvention(NullNamingConvention.Instance)
+			.WithAttemptingUnquotedStringTypeDeserialization()
+			.Build();
+
+		public bool Accepts(Type type) => type.FullName == JsonElementTypeName || IsJsonNode(type);
+
+		// The converter is registered on the serializer only; reading never produces these types.
+		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
+			throw new NotSupportedException("This converter only writes values.");
+
+		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+		{
+			object? plain = ToPlainValue(value);
+			serializer(plain, plain?.GetType() ?? typeof(object));
+		}
+
+		/// <summary>
+		/// Converts a JSON value to the dictionaries, lists and scalars YamlDotNet writes natively.
+		/// </summary>
+		/// <param name="value">A <c>JsonElement</c> or <c>JsonNode</c>, or null.</param>
+		/// <returns>The value's plain equivalent, or null for a JSON null.</returns>
+		private static object? ToPlainValue(object? value)
+		{
+			string? json = value is null ? null : GetJsonText(value);
+			return string.IsNullOrEmpty(json) ? null : JsonTextDeserializer.Deserialize<object?>(json!);
+		}
+
+		private static bool IsJsonNode(Type type)
+		{
+			for (Type? current = type; current is not null; current = current.BaseType)
+			{
+				if (current.FullName == JsonNodeTypeName)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Gets the value's JSON text: <c>JsonElement.GetRawText()</c>, or <c>JsonNode.ToJsonString()</c>.
+		/// A default <c>JsonElement</c>, which holds nothing, reads as null.
+		/// </summary>
+		private static string? GetJsonText(object value)
+		{
+			Type type = value.GetType();
+			if (type.FullName == JsonElementTypeName)
+			{
+				object? kind = type.GetProperty("ValueKind")?.GetValue(value);
+				return kind?.ToString() == "Undefined"
+					? null
+					: (string?)type.GetMethod("GetRawText", Type.EmptyTypes)?.Invoke(value, null);
+			}
+
+			System.Reflection.MethodInfo? toJsonString = type.GetMethods()
+				.FirstOrDefault(method => method.Name == "ToJsonString" && method.GetParameters().Length == 1);
+			return (string?)toJsonString?.Invoke(value, [null]);
 		}
 	}
 
