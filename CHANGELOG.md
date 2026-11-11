@@ -2,6 +2,10 @@
 
 Changes since v1.4.5:
 
+- Write System.Text.Json values as the values they hold [patch] (#244) (matt-edmondson)
+- Read a header that holds a YAML tag, and keep the tag on rebuild [patch] (#245) (matt-edmondson)
+- Quote a TimeSpan and keep a dot in an exponent double's mantissa [patch] (#246) (matt-edmondson)
+- Write a value passed under two keys in full, not as a YAML alias [patch] (#248) (matt-edmondson)
 - Keep values a header already holds as written when the header is rewritten [patch] (#237) (matt-edmondson)
 - Insert a double or decimal into the header without dropping its comments [patch] (#236) (matt-edmondson)
 - Resolve only a plain \<\< as a YAML merge key [patch] (#232) (matt-edmondson)
