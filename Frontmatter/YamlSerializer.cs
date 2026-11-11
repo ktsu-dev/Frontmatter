@@ -761,9 +761,10 @@ public static class YamlSerializer
 	}
 
 	/// <summary>
-	/// Writes <see cref="DateTimeOffset"/>, <see cref="System.Version"/>, and on .NET 6 or later <c>DateOnly</c> and
-	/// <c>TimeOnly</c>, as one invariant scalar. Without it YamlDotNet writes each as a mapping of its public
-	/// properties, which site generators cannot read as a date or version.
+	/// Writes <see cref="DateTimeOffset"/>, <see cref="System.Version"/>, <see cref="System.Numerics.BigInteger"/>,
+	/// <c>nint</c> and <c>nuint</c>, on .NET 6 or later <c>DateOnly</c>, <c>TimeOnly</c> and <c>Half</c>, and on
+	/// .NET 7 or later <c>Int128</c> and <c>UInt128</c>, as one invariant scalar. Without it YamlDotNet writes each
+	/// as a mapping of its public properties, or as <c>{}</c> when it has none, so the date, version or number is lost.
 	/// </summary>
 	/// <remarks>
 	/// Dates are written plain in ISO 8601, so YAML readers such as Jekyll resolve them as timestamps. A time
@@ -773,6 +774,9 @@ public static class YamlSerializer
 	/// A <c>double</c> or <c>float</c> in exponent form gets a <c>.</c> in its mantissa, as in <c>1.0E+20</c>,
 	/// since YAML 1.1 reads <c>1E+20</c> as a string while YAML 1.2 reads either as a float (#225). Every
 	/// format is culture-invariant, unlike YamlDotNet's own <c>DateOnly</c> and <c>TimeOnly</c> converters.
+	/// The numbers are written plain, so they read back as numbers. A <c>Half</c> is written in its shortest
+	/// round-trip form, with a <c>.0</c> before any exponent so YAML 1.1 readers also take it for a float,
+	/// and as <c>.inf</c>, <c>-.inf</c> or <c>.nan</c> when it is not finite, as YAML spells those.
 	/// </remarks>
 	private sealed class InvariantScalarTypeConverter : IYamlTypeConverter
 	{
@@ -782,9 +786,17 @@ public static class YamlSerializer
 			|| type == typeof(TimeSpan)
 			|| type == typeof(double)
 			|| type == typeof(float)
+			|| type == typeof(System.Numerics.BigInteger)
+			|| type == typeof(nint)
+			|| type == typeof(nuint)
 #if NET6_0_OR_GREATER
 			|| type == typeof(DateOnly)
 			|| type == typeof(TimeOnly)
+			|| type == typeof(Half)
+#endif
+#if NET7_0_OR_GREATER
+			|| type == typeof(Int128)
+			|| type == typeof(UInt128)
 #endif
 			;
 
@@ -816,7 +828,24 @@ public static class YamlSerializer
 				case TimeOnly time:
 					emitter.Emit(new Scalar(null, null, time.ToString("HH:mm:ss.FFFFFFF", culture), ScalarStyle.DoubleQuoted, true, true));
 					break;
+				case Half half:
+					emitter.Emit(new Scalar(FormatHalf(half)));
+					break;
 #endif
+#if NET7_0_OR_GREATER
+				case Int128 or UInt128:
+					emitter.Emit(new Scalar(((IFormattable)value).ToString(null, culture)));
+					break;
+#endif
+				case System.Numerics.BigInteger integer:
+					emitter.Emit(new Scalar(integer.ToString(culture)));
+					break;
+				case nint native:
+					emitter.Emit(new Scalar(((long)native).ToString(culture)));
+					break;
+				case nuint native:
+					emitter.Emit(new Scalar(((ulong)native).ToString(culture)));
+					break;
 				default:
 					// A Version, which Accepts leaves as the only other type.
 					serializer(value?.ToString(), typeof(string));
@@ -849,6 +878,31 @@ public static class YamlSerializer
 				? text[..exponent] + ".0" + text[exponent..]
 				: text;
 		}
+#if NET6_0_OR_GREATER
+
+		/// <summary>
+		/// Spells a <see cref="Half"/> as a YAML float: its shortest round-trip text, with <c>.0</c> added before
+		/// an exponent that has no fraction ahead of it, or YAML's <c>.inf</c>, <c>-.inf</c> and <c>.nan</c>.
+		/// </summary>
+		/// <param name="value">The value to write.</param>
+		/// <returns>The scalar text.</returns>
+		private static string FormatHalf(Half value)
+		{
+			if (Half.IsNaN(value))
+			{
+				return ".nan";
+			}
+
+			if (Half.IsInfinity(value))
+			{
+				return Half.IsNegative(value) ? "-.inf" : ".inf";
+			}
+
+			string text = value.ToString("R", CultureInfo.InvariantCulture);
+			int exponent = text.IndexOf('E');
+			return exponent >= 0 && text.IndexOf('.') < 0 ? text.Insert(exponent, ".0") : text;
+		}
+#endif
 	}
 
 	/// <summary>
