@@ -2,6 +2,7 @@
 
 Changes since v1.4.5:
 
+- Keep a string the header wrote quoted quoted when the header is rewritten [patch] (#240) (matt-edmondson)
 - Write System.Text.Json values as the values they hold [patch] (#244) (matt-edmondson)
 - Read a header that holds a YAML tag, and keep the tag on rebuild [patch] (#245) (matt-edmondson)
 - Quote a TimeSpan and keep a dot in an exponent double's mantissa [patch] (#246) (matt-edmondson)
