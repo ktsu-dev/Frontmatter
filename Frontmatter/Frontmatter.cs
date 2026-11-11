@@ -85,8 +85,9 @@ public static class Frontmatter
 		List<Dictionary<string, object>> frontmatterObjects = ExtractFrontmatterObjects(input, out string body, out bool hasUnreadableBlock);
 
 		// A block that could not be parsed would be dropped from the rebuilt header while the body still
-		// starts after it, so the document is left alone rather than losing that block's text.
-		if (frontmatterObjects.Count == 0 || hasUnreadableBlock)
+		// starts after it, so the document is left alone rather than losing that block's text. A tag such as
+		// R Markdown's !r is not in the values read, so a rebuilt header would lose it the same way.
+		if (frontmatterObjects.Count == 0 || hasUnreadableBlock || HeaderHoldsDroppedTag(input))
 		{
 			// Cache the original content since no processing was needed
 			ProcessedFrontmatterCache.Add(cacheKey, input);
@@ -94,6 +95,7 @@ public static class Frontmatter
 		}
 
 		Dictionary<string, object> combinedFrontmatterObject = CombineAllFrontmatterObjects(frontmatterObjects);
+		Dictionary<string, object> documentValues = new(combinedFrontmatterObject);
 
 		// Apply property merging if enabled
 		if (mergeStrategy != FrontmatterMergeStrategy.None)
@@ -114,7 +116,7 @@ public static class Frontmatter
 		}
 
 		string nl = NewLineOf(input);
-		string combinedFrontmatter = WithNewLines(YamlSerializer.SerializeYamlObject(combinedFrontmatterObject).Trim(), nl);
+		string combinedFrontmatter = WithNewLines(YamlSerializer.SerializeDocumentValues(combinedFrontmatterObject, documentValues, FindQuotedDocumentStrings(input)).Trim(), nl);
 
 		string result = $"{FrontmatterDelimiter}{nl}{combinedFrontmatter}{nl}{FrontmatterDelimiter}{nl}{body}";
 
@@ -197,6 +199,7 @@ public static class Frontmatter
 	/// <param name="frontmatter">The frontmatter properties to add.</param>
 	/// <returns>A string containing the markdown document with added frontmatter.</returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
+	/// <exception cref="ArgumentException">Thrown when a frontmatter value contains itself.</exception>
 	public static string AddFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
 		Ensure.NotNull(input);
@@ -332,8 +335,13 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="input">The markdown document content as a string.</param>
 	/// <param name="frontmatter">The new frontmatter properties.</param>
-	/// <returns>A string containing the markdown document with replaced frontmatter.</returns>
+	/// <returns>
+	/// A string containing the markdown document with replaced frontmatter. When the existing header holds a
+	/// tag that reading drops, such as R Markdown's <c>!r</c>, the document is returned unchanged rather than
+	/// losing the tag; removing the header first replaces it regardless.
+	/// </returns>
 	/// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
+	/// <exception cref="ArgumentException">Thrown when a frontmatter value contains itself.</exception>
 	public static string ReplaceFrontmatter(string input, Dictionary<string, object> frontmatter)
 	{
 		Ensure.NotNull(input);
@@ -343,11 +351,18 @@ public static class Frontmatter
 			return RemoveFrontmatter(input);
 		}
 
+		// A tag such as R Markdown's !r is not in the values read from the header, so rewriting the header
+		// would silently drop it. The document is left alone instead.
+		if (HeaderHoldsDroppedTag(input))
+		{
+			return input;
+		}
+
 		// Values the existing header already holds are written as read from the document, so only the
 		// values the caller changed or added get the YAML 1.1 quoting caller values need.
 		Dictionary<string, object> existing = CombineAllFrontmatterObjects(ExtractFrontmatterObjects(input, out string body));
 		string nl = NewLineOf(input);
-		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing).Trim(), nl);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing, FindQuotedDocumentStrings(input)).Trim(), nl);
 		return WithHeader(yamlFrontmatter, body, nl);
 	}
 
@@ -394,6 +409,7 @@ public static class Frontmatter
 	/// </summary>
 	/// <param name="frontmatter">The frontmatter dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML frontmatter.</returns>
+	/// <exception cref="ArgumentException">Thrown when a frontmatter value contains itself.</exception>
 	public static string SerializeFrontmatter(Dictionary<string, object> frontmatter) => frontmatter == null || frontmatter.Count == 0 ? string.Empty : YamlSerializer.SerializeCallerValues(frontmatter).Trim();
 
 	/// <summary>
@@ -479,6 +495,53 @@ public static class Frontmatter
 
 		return frontmatterObjects;
 	}
+
+	/// <summary>
+	/// Finds the strings a document's frontmatter writes as quoted scalars, by key, so a rewritten header can
+	/// keep them quoted. A repeated key takes its quoting from the earliest block that holds it, the block whose
+	/// value <see cref="CombineAllFrontmatterObjects"/> keeps.
+	/// </summary>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <returns>The quoted string values, by key; empty when the document has no frontmatter.</returns>
+	private static Dictionary<string, string> FindQuotedDocumentStrings(string input)
+	{
+		Dictionary<string, string> quoted = new(StringComparer.Ordinal);
+		if (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out _))
+		{
+			return quoted;
+		}
+
+		HashSet<string> seen = new(StringComparer.Ordinal);
+		foreach (string section in blocks.Select(block => block.Trim()))
+		{
+			if (string.IsNullOrWhiteSpace(section)
+				|| !YamlSerializer.TryParseYamlObject(section, out Dictionary<string, object>? properties))
+			{
+				continue;
+			}
+
+			Dictionary<string, string> blockQuoted = YamlSerializer.FindQuotedTopLevelStrings(section);
+			foreach (string key in properties.Keys)
+			{
+				if (seen.Add(key) && blockQuoted.TryGetValue(key, out string? text))
+				{
+					quoted[key] = text;
+				}
+			}
+		}
+
+		return quoted;
+	}
+
+	/// <summary>
+	/// Reports whether any of a document's frontmatter blocks holds a tag that reading drops, such as
+	/// R Markdown's <c>!r</c>, so a rebuilt header would lose it.
+	/// </summary>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <returns>true if a frontmatter block holds a tag that reading drops; otherwise, false.</returns>
+	private static bool HeaderHoldsDroppedTag(string input) =>
+		TrySplitFrontmatterBlocks(input, out List<string> blocks, out _)
+		&& blocks.Any(block => YamlSerializer.HoldsDroppedTag(block.Trim()));
 
 	/// <summary>
 	/// Folds frontmatter objects into one, in document order, so an earlier block wins a repeated key.

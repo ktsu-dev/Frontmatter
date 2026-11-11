@@ -74,12 +74,19 @@ public static class YamlSerializer
 	/// Creates the builder both serializers start from, so an option that one of them needs, such as the
 	/// invariant scalar converter, cannot be left off the other. Only string quoting differs between them.
 	/// </summary>
+	/// <remarks>
+	/// Aliases are disabled, so an object the caller passes under two keys is written in full under each
+	/// instead of as an anchor (<c>&amp;o0</c>) and an alias (<c>*o0</c>). A header is text people edit, and
+	/// readers such as Ruby's <c>YAML.safe_load</c> refuse aliases.
+	/// </remarks>
 	/// <returns>A serializer builder with every option the two serializers share.</returns>
 	private static SerializerBuilder CreateSerializerBuilder() => new SerializerBuilder()
+		.DisableAliases()
 		.WithNamingConvention(NullNamingConvention.Instance)
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
-		.WithTypeConverter(new InvariantScalarTypeConverter());
+		.WithTypeConverter(new InvariantScalarTypeConverter())
+		.WithTypeConverter(new JsonValueTypeConverter());
 
 	/// <summary>
 	/// Attempts to parse a YAML string into a dictionary object.
@@ -113,7 +120,7 @@ public static class YamlSerializer
 		{
 			// Simple approach with direct deserializer
 			// A document with no content (a comment only, ~ or null) deserializes to null
-			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(new QuotedMergeKeyParser(new Parser(new StringReader(input))));
+			Dictionary<object, object>? rawData = Deserializer.Deserialize<Dictionary<object, object>?>(new QuotedMergeKeyParser(new TagTolerantParser(new Parser(new StringReader(input)))));
 			if (rawData is null)
 			{
 				return false;
@@ -184,7 +191,7 @@ public static class YamlSerializer
 	{
 		try
 		{
-			object? value = Deserializer.Deserialize<object?>(input);
+			object? value = Deserializer.Deserialize<object?>(new TagTolerantParser(new Parser(new StringReader(input))));
 			return value is null or System.Collections.IDictionary { Count: 0 };
 		}
 		catch (Exception ex) when (ex is YamlException or InvalidOperationException or ArgumentException)
@@ -198,8 +205,9 @@ public static class YamlSerializer
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML.</returns>
+	/// <exception cref="ArgumentException">Thrown when a value contains itself.</exception>
 	public static string SerializeYamlObject(Dictionary<string, object> input) =>
-		input == null || input.Count == 0 ? string.Empty : Serializer.Serialize(input);
+		input == null || input.Count == 0 ? string.Empty : Serialize(Serializer, input);
 
 	/// <summary>
 	/// Serializes properties a caller supplied to a YAML string, quoting strings that a YAML 1.1 reader
@@ -207,8 +215,51 @@ public static class YamlSerializer
 	/// </summary>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <returns>A string containing the serialized YAML.</returns>
+	/// <exception cref="ArgumentException">Thrown when a value contains itself.</exception>
 	internal static string SerializeCallerValues(Dictionary<string, object> input) =>
-		input == null || input.Count == 0 ? string.Empty : CallerValueSerializer.Serialize(input);
+		input == null || input.Count == 0 ? string.Empty : Serialize(CallerValueSerializer, input);
+
+	/// <summary>
+	/// Serializes properties, reporting a value that contains itself as an <see cref="ArgumentException"/>
+	/// naming its key. With aliases disabled such a value cannot be written, and YamlDotNet stops at its
+	/// recursion limit instead.
+	/// </summary>
+	/// <param name="serializer">The serializer to write with.</param>
+	/// <param name="input">The properties to serialize.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	/// <exception cref="ArgumentException">Thrown when a value contains itself.</exception>
+	private static string Serialize(ISerializer serializer, Dictionary<string, object> input)
+	{
+		try
+		{
+			return serializer.Serialize(input);
+		}
+		catch (MaximumRecursionLevelReachedException ex)
+		{
+			string key = input.Keys.FirstOrDefault(k => !CanSerialize(serializer, k, input[k])) ?? string.Empty;
+			throw new ArgumentException($"The value of frontmatter property '{key}' contains itself, so it cannot be written as YAML.", nameof(input), ex);
+		}
+	}
+
+	/// <summary>
+	/// Reports whether one property can be serialized without reaching the recursion limit.
+	/// </summary>
+	/// <param name="serializer">The serializer to write with.</param>
+	/// <param name="key">The property name.</param>
+	/// <param name="value">The property value.</param>
+	/// <returns>true if the property serializes; otherwise, false.</returns>
+	private static bool CanSerialize(ISerializer serializer, string key, object value)
+	{
+		try
+		{
+			serializer.Serialize(new Dictionary<string, object> { [key] = value });
+			return true;
+		}
+		catch (MaximumRecursionLevelReachedException)
+		{
+			return false;
+		}
+	}
 
 	/// <summary>
 	/// Serializes properties for a document that already has a header, writing each value the header already
@@ -223,8 +274,13 @@ public static class YamlSerializer
 	/// </remarks>
 	/// <param name="input">The dictionary to serialize.</param>
 	/// <param name="documentValues">The properties the document's existing header holds.</param>
+	/// <param name="quotedDocumentStrings">
+	/// The strings the header wrote as quoted scalars, by key (see <see cref="FindQuotedTopLevelStrings"/>).
+	/// Such a string is written the way a caller value is, even when unchanged, so a quoted <c>'no'</c> keeps
+	/// its quotes instead of becoming a plain <c>no</c> that a YAML 1.1 reader takes for a boolean.
+	/// </param>
 	/// <returns>A string containing the serialized YAML.</returns>
-	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues)
+	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string>? quotedDocumentStrings = null)
 	{
 		if (input == null || input.Count == 0)
 		{
@@ -233,7 +289,7 @@ public static class YamlSerializer
 
 		if (documentValues == null || documentValues.Count == 0)
 		{
-			return CallerValueSerializer.Serialize(input);
+			return Serialize(CallerValueSerializer, input);
 		}
 
 		// Consecutive keys written by the same serializer are serialized together, keeping the caller's key order.
@@ -242,10 +298,11 @@ public static class YamlSerializer
 		bool runIsFromDocument = false;
 		foreach (KeyValuePair<string, object> property in input)
 		{
-			bool fromDocument = IsUnchangedDocumentValue(property.Key, property.Value, documentValues);
+			bool fromDocument = IsUnchangedDocumentValue(property.Key, property.Value, documentValues)
+				&& !WasQuotedInDocument(property.Key, property.Value, documentValues, quotedDocumentStrings);
 			if (run.Count > 0 && fromDocument != runIsFromDocument)
 			{
-				yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
+				yaml.Append(Serialize(runIsFromDocument ? Serializer : CallerValueSerializer, run));
 				run = [];
 			}
 
@@ -253,8 +310,128 @@ public static class YamlSerializer
 			run[property.Key] = property.Value;
 		}
 
-		yaml.Append((runIsFromDocument ? Serializer : CallerValueSerializer).Serialize(run));
+		yaml.Append(Serialize(runIsFromDocument ? Serializer : CallerValueSerializer, run));
 		return yaml.ToString();
+	}
+
+	/// <summary>
+	/// Serializes properties rebuilt from a document's own headers, such as the combined header
+	/// <see cref="Frontmatter.CombineFrontmatter(string)"/> writes. Every value is written the way a value read
+	/// from a document is, except a string the headers wrote quoted, which keeps its quoting.
+	/// </summary>
+	/// <param name="input">The dictionary to serialize.</param>
+	/// <param name="documentValues">The properties the document's headers held before they were rebuilt.</param>
+	/// <param name="quotedDocumentStrings">The strings the headers wrote as quoted scalars, by key.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	internal static string SerializeDocumentValues(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string> quotedDocumentStrings)
+	{
+		if (input == null || input.Count == 0)
+		{
+			return string.Empty;
+		}
+
+		if (quotedDocumentStrings == null || quotedDocumentStrings.Count == 0)
+		{
+			return Serializer.Serialize(input);
+		}
+
+		System.Text.StringBuilder yaml = new();
+		Dictionary<string, object> run = [];
+		bool runIsQuoted = false;
+		foreach (KeyValuePair<string, object> property in input)
+		{
+			bool quoted = WasQuotedInDocument(property.Key, property.Value, documentValues, quotedDocumentStrings);
+			if (run.Count > 0 && quoted != runIsQuoted)
+			{
+				yaml.Append((runIsQuoted ? CallerValueSerializer : Serializer).Serialize(run));
+				run = [];
+			}
+
+			runIsQuoted = quoted;
+			run[property.Key] = property.Value;
+		}
+
+		yaml.Append((runIsQuoted ? CallerValueSerializer : Serializer).Serialize(run));
+		return yaml.ToString();
+	}
+
+	/// <summary>
+	/// Finds the top-level keys of a YAML mapping whose values are written as single- or double-quoted
+	/// scalars, which the parsed dictionary does not record.
+	/// </summary>
+	/// <remarks>
+	/// Only the first occurrence of a key counts, as <see cref="TryParseYamlObject"/> keeps only that one. A
+	/// scalar with an explicit tag is skipped, since it need not read as a string. Text that does not parse
+	/// as a mapping yields no keys.
+	/// </remarks>
+	/// <param name="input">The YAML text of one block.</param>
+	/// <returns>The quoted string values, by key.</returns>
+	internal static Dictionary<string, string> FindQuotedTopLevelStrings(string input)
+	{
+		Dictionary<string, string> quoted = new(StringComparer.Ordinal);
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return quoted;
+		}
+
+		try
+		{
+			Parser parser = new(new StringReader(input));
+			parser.Consume<StreamStart>();
+			if (!parser.TryConsume<DocumentStart>(out _) || !parser.TryConsume<MappingStart>(out _))
+			{
+				return quoted;
+			}
+
+			HashSet<string> seen = new(StringComparer.Ordinal);
+			while (!parser.TryConsume<MappingEnd>(out _))
+			{
+				// A complex (mapping or sequence) key has no name to record; its value is skipped like any other.
+				string? key = parser.Current is Scalar keyScalar ? keyScalar.Value : null;
+				parser.SkipThisAndNestedEvents();
+				if (key != null && seen.Add(key) && parser.Current is Scalar valueScalar && IsQuotedString(valueScalar))
+				{
+					quoted[key] = valueScalar.Value;
+				}
+
+				parser.SkipThisAndNestedEvents();
+			}
+		}
+		catch (YamlException)
+		{
+			quoted.Clear();
+		}
+
+		return quoted;
+	}
+
+	/// <summary>
+	/// Reports whether a scalar is written single- or double-quoted with no explicit tag, so it reads as a string.
+	/// </summary>
+	private static bool IsQuotedString(Scalar scalar) =>
+		scalar.Style is ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted && scalar.Tag.IsEmpty;
+
+	/// <summary>
+	/// Reports whether a value is a string the document's header wrote quoted.
+	/// </summary>
+	/// <remarks>
+	/// A key the header holds takes its quoting from the header's value for that key. A key the header does not
+	/// hold, such as one a rebuilt header renamed or merged its value into, counts as quoted when the header
+	/// quoted the same string under some key.
+	/// </remarks>
+	private static bool WasQuotedInDocument(string key, object value, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string>? quotedDocumentStrings)
+	{
+		if (value is not string text || quotedDocumentStrings == null || quotedDocumentStrings.Count == 0)
+		{
+			return false;
+		}
+
+		if (documentValues.ContainsKey(key))
+		{
+			return quotedDocumentStrings.TryGetValue(key, out string? quotedText) && string.Equals(quotedText, text, StringComparison.Ordinal);
+		}
+
+		return quotedDocumentStrings.Any(quotedString => string.Equals(quotedString.Value, text, StringComparison.Ordinal));
 	}
 
 	/// <summary>
@@ -276,8 +453,8 @@ public static class YamlSerializer
 			return true;
 		}
 
-		return Serializer.Serialize(new Dictionary<string, object> { [key] = value })
-			== Serializer.Serialize(new Dictionary<string, object> { [key] = documentValue });
+		return Serialize(Serializer, new Dictionary<string, object> { [key] = value })
+			== Serialize(Serializer, new Dictionary<string, object> { [key] = documentValue });
 	}
 
 	/// <summary>
@@ -441,6 +618,114 @@ public static class YamlSerializer
 	};
 
 	/// <summary>
+	/// Reports whether a YAML document holds a tag that <see cref="TryParseYamlObject"/> drops while reading it,
+	/// such as R Markdown's <c>!r</c> or <c>!expr</c>, or <c>!!binary</c>, <c>!!set</c> or <c>!!omap</c>.
+	/// </summary>
+	/// <remarks>
+	/// Such a document can be read, but the values read from it no longer say what the tag said, so writing
+	/// them back would silently lose the tag. The core tags that only restate a node's kind or type
+	/// (<c>!!str</c>, <c>!!null</c>, <c>!!bool</c>, <c>!!int</c>, <c>!!float</c>, <c>!!seq</c>, <c>!!map</c> and the
+	/// non-specific <c>!</c>) are read faithfully, so they are not reported.
+	/// </remarks>
+	/// <param name="input">The YAML text.</param>
+	/// <returns>true if reading the document drops a tag; otherwise, false.</returns>
+	internal static bool HoldsDroppedTag(string input)
+	{
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return false;
+		}
+
+		try
+		{
+			Parser parser = new(new StringReader(input));
+			while (parser.MoveNext())
+			{
+				if (parser.Current is NodeEvent { Tag.IsEmpty: false } node && TagTolerantParser.KindOf(node.Tag.Value) == CoreTag.None)
+				{
+					return true;
+				}
+			}
+		}
+		catch (YamlException)
+		{
+			return false;
+		}
+
+		return false;
+	}
+
+	/// <summary>
+	/// The core tags <see cref="TagTolerantParser"/> reads faithfully.
+	/// </summary>
+	private enum CoreTag
+	{
+		None,
+		String,
+		Null,
+		Scalar,
+		Collection,
+	}
+
+	/// <summary>
+	/// Removes the tags from a document's nodes, so YamlDotNet, which has no mapping for them, does not reject
+	/// the whole document with "Encountered an unresolved tag" (#243).
+	/// </summary>
+	/// <remarks>
+	/// <c>!!str</c> and the non-specific <c>!</c> make a scalar a string, as a quoted scalar is.
+	/// <c>!!null</c> makes it null. <c>!!bool</c>, <c>!!int</c> and <c>!!float</c> have the value resolved as a plain
+	/// scalar would be, and <c>!!seq</c> and <c>!!map</c> only restate the collection's kind. Any other tag is
+	/// dropped, so its node is read as the untagged scalar or collection it is written as.
+	/// <see cref="HoldsDroppedTag"/> reports a document that holds such a tag.
+	/// </remarks>
+	private sealed class TagTolerantParser(IParser parser) : IParser
+	{
+		private const string CoreTagPrefix = "tag:yaml.org,2002:";
+
+		public ParsingEvent? Current { get; private set; }
+
+		public bool MoveNext()
+		{
+			if (!parser.MoveNext())
+			{
+				Current = null;
+				return false;
+			}
+
+			Current = parser.Current switch
+			{
+				Scalar { Tag.IsEmpty: false } scalar => Untagged(scalar),
+				MappingStart { Tag.IsEmpty: false } mapping => new MappingStart(mapping.Anchor, TagName.Empty, mapping.IsImplicit, mapping.Style, mapping.Start, mapping.End),
+				SequenceStart { Tag.IsEmpty: false } sequence => new SequenceStart(sequence.Anchor, TagName.Empty, sequence.IsImplicit, sequence.Style, sequence.Start, sequence.End),
+				_ => parser.Current,
+			};
+			return true;
+		}
+
+		/// <summary>
+		/// Classifies a tag as one of the core tags read faithfully, or as one that is dropped.
+		/// </summary>
+		/// <param name="tag">The tag's full name, such as <c>tag:yaml.org,2002:str</c>.</param>
+		/// <returns>The kind of core tag, or <see cref="CoreTag.None"/> for a tag reading drops.</returns>
+		internal static CoreTag KindOf(string tag) => tag switch
+		{
+			"!" or CoreTagPrefix + "str" => CoreTag.String,
+			CoreTagPrefix + "null" => CoreTag.Null,
+			CoreTagPrefix + "bool" or CoreTagPrefix + "int" or CoreTagPrefix + "float" => CoreTag.Scalar,
+			CoreTagPrefix + "seq" or CoreTagPrefix + "map" => CoreTag.Collection,
+			_ => CoreTag.None,
+		};
+
+		private static Scalar Untagged(Scalar scalar) => KindOf(scalar.Tag.Value) switch
+		{
+			CoreTag.String => new Scalar(scalar.Anchor, TagName.Empty, scalar.Value, scalar.Style is ScalarStyle.Plain or ScalarStyle.Any ? ScalarStyle.DoubleQuoted : scalar.Style, false, true, scalar.Start, scalar.End),
+			CoreTag.Null => new Scalar(scalar.Anchor, TagName.Empty, string.Empty, ScalarStyle.Plain, true, false, scalar.Start, scalar.End),
+			CoreTag.Scalar => new Scalar(scalar.Anchor, TagName.Empty, scalar.Value, ScalarStyle.Plain, true, false, scalar.Start, scalar.End),
+			_ => new Scalar(scalar.Anchor, TagName.Empty, scalar.Value, scalar.Style, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End),
+		};
+	}
+
+	/// <summary>
 	/// Replaces a single- or double-quoted <c>&lt;&lt;</c> scalar with <see cref="QuotedMergeKey"/>, so that
 	/// <see cref="ResolveMergeKeys"/> resolves only a plain <c>&lt;&lt;</c> as a merge, as YAML 1.1, PyYAML and
 	/// js-yaml do. The stand-in is turned back into <c>&lt;&lt;</c> when the block is converted.
@@ -484,7 +769,10 @@ public static class YamlSerializer
 	/// <remarks>
 	/// Dates are written plain in ISO 8601, so YAML readers such as Jekyll resolve them as timestamps. A time
 	/// is double-quoted, since YAML 1.1 reads a plain <c>10:30:00</c> as a base-60 number. A version is written
-	/// as a string, which quotes one such as <c>1.2</c> that would otherwise read back as a number. Every
+	/// as a string, which quotes one such as <c>1.2</c> that would otherwise read back as a number. A
+	/// <c>TimeSpan</c> is double-quoted in its invariant <c>"c"</c> format for the same reason as a time (#225).
+	/// A <c>double</c> or <c>float</c> in exponent form gets a <c>.</c> in its mantissa, as in <c>1.0E+20</c>,
+	/// since YAML 1.1 reads <c>1E+20</c> as a string while YAML 1.2 reads either as a float (#225). Every
 	/// format is culture-invariant, unlike YamlDotNet's own <c>DateOnly</c> and <c>TimeOnly</c> converters.
 	/// The numbers are written plain, so they read back as numbers. A <c>Half</c> is written in its shortest
 	/// round-trip form, with a <c>.0</c> before any exponent so YAML 1.1 readers also take it for a float,
@@ -495,6 +783,9 @@ public static class YamlSerializer
 		public bool Accepts(Type type) =>
 			type == typeof(DateTimeOffset)
 			|| type == typeof(System.Version)
+			|| type == typeof(TimeSpan)
+			|| type == typeof(double)
+			|| type == typeof(float)
 			|| type == typeof(System.Numerics.BigInteger)
 			|| type == typeof(nint)
 			|| type == typeof(nuint)
@@ -520,6 +811,15 @@ public static class YamlSerializer
 			{
 				case DateTimeOffset dateTimeOffset:
 					emitter.Emit(new Scalar(dateTimeOffset.ToString("O", culture)));
+					break;
+				case TimeSpan duration:
+					emitter.Emit(new Scalar(null, null, duration.ToString("c", culture), ScalarStyle.DoubleQuoted, true, true));
+					break;
+				case double number:
+					emitter.Emit(new Scalar(FormatFloat(number, number.ToString("R", culture))));
+					break;
+				case float number:
+					emitter.Emit(new Scalar(FormatFloat(number, number.ToString("R", culture))));
 					break;
 #if NET6_0_OR_GREATER
 				case DateOnly date:
@@ -552,6 +852,32 @@ public static class YamlSerializer
 					break;
 			}
 		}
+
+		/// <summary>
+		/// Writes a floating-point number so that YAML 1.1 and YAML 1.2 readers both read a float. Infinity and
+		/// NaN take YAML's own spellings. An exponent form such as <c>1E+20</c> gets <c>.0</c> after its mantissa,
+		/// since YAML 1.1's float pattern needs a <c>.</c>; the exponent is already signed.
+		/// </summary>
+		/// <param name="number">The number, widened to a double.</param>
+		/// <param name="text">The number's invariant round-trip text.</param>
+		/// <returns>The text to write as a plain scalar.</returns>
+		private static string FormatFloat(double number, string text)
+		{
+			if (double.IsNaN(number))
+			{
+				return ".nan";
+			}
+
+			if (double.IsInfinity(number))
+			{
+				return number > 0 ? ".inf" : "-.inf";
+			}
+
+			int exponent = text.IndexOfAny(['E', 'e']);
+			return exponent >= 0 && text.IndexOf('.', 0, exponent) < 0
+				? text[..exponent] + ".0" + text[exponent..]
+				: text;
+		}
 #if NET6_0_OR_GREATER
 
 		/// <summary>
@@ -577,6 +903,89 @@ public static class YamlSerializer
 			return exponent >= 0 && text.IndexOf('.') < 0 ? text.Insert(exponent, ".0") : text;
 		}
 #endif
+	}
+
+	/// <summary>
+	/// Writes a <c>System.Text.Json</c> <c>JsonElement</c> or <c>JsonNode</c> as the value it holds: an object as
+	/// a mapping, an array as a sequence, and a string, number, boolean or null as that scalar. Without it
+	/// YamlDotNet writes each as a mapping of its public properties, such as <c>ValueKind: String</c>, so a
+	/// <c>Dictionary&lt;string, object&gt;</c> deserialized from JSON loses every value (#241).
+	/// </summary>
+	/// <remarks>
+	/// The types are matched by name, so the library needs no <c>System.Text.Json</c> reference on .NET
+	/// Standard. The value's JSON text is read as YAML, of which JSON is a subset, and the result is written
+	/// like any other caller value, so a JSON string such as <c>"no"</c> is still quoted for YAML 1.1 readers.
+	/// </remarks>
+	private sealed class JsonValueTypeConverter : IYamlTypeConverter
+	{
+		private const string JsonElementTypeName = "System.Text.Json.JsonElement";
+
+		private const string JsonNodeTypeName = "System.Text.Json.Nodes.JsonNode";
+
+		/// <summary>
+		/// Reads the JSON text. It is the shared deserializer's configuration, so an unquoted number or
+		/// boolean becomes that CLR value and a quoted string stays a string.
+		/// </summary>
+		private static readonly IDeserializer JsonTextDeserializer = new DeserializerBuilder()
+			.WithNamingConvention(NullNamingConvention.Instance)
+			.WithAttemptingUnquotedStringTypeDeserialization()
+			.Build();
+
+		public bool Accepts(Type type) => type.FullName == JsonElementTypeName || IsJsonNode(type);
+
+		// The converter is registered on the serializer only; reading never produces these types.
+		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
+			throw new NotSupportedException("This converter only writes values.");
+
+		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+		{
+			object? plain = ToPlainValue(value);
+			serializer(plain, plain?.GetType() ?? typeof(object));
+		}
+
+		/// <summary>
+		/// Converts a JSON value to the dictionaries, lists and scalars YamlDotNet writes natively.
+		/// </summary>
+		/// <param name="value">A <c>JsonElement</c> or <c>JsonNode</c>, or null.</param>
+		/// <returns>The value's plain equivalent, or null for a JSON null.</returns>
+		private static object? ToPlainValue(object? value)
+		{
+			string? json = value is null ? null : GetJsonText(value);
+			return string.IsNullOrEmpty(json) ? null : JsonTextDeserializer.Deserialize<object?>(json!);
+		}
+
+		private static bool IsJsonNode(Type type)
+		{
+			for (Type? current = type; current is not null; current = current.BaseType)
+			{
+				if (current.FullName == JsonNodeTypeName)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// Gets the value's JSON text: <c>JsonElement.GetRawText()</c>, or <c>JsonNode.ToJsonString()</c>.
+		/// A default <c>JsonElement</c>, which holds nothing, reads as null.
+		/// </summary>
+		private static string? GetJsonText(object value)
+		{
+			Type type = value.GetType();
+			if (type.FullName == JsonElementTypeName)
+			{
+				object? kind = type.GetProperty("ValueKind")?.GetValue(value);
+				return kind?.ToString() == "Undefined"
+					? null
+					: (string?)type.GetMethod("GetRawText", Type.EmptyTypes)?.Invoke(value, null);
+			}
+
+			System.Reflection.MethodInfo? toJsonString = type.GetMethods()
+				.FirstOrDefault(method => method.Name == "ToJsonString" && method.GetParameters().Length == 1);
+			return (string?)toJsonString?.Invoke(value, [null]);
+		}
 	}
 
 	/// <summary>
