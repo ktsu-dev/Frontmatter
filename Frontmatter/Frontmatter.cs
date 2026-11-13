@@ -362,7 +362,7 @@ public static class Frontmatter
 		// values the caller changed or added get the YAML 1.1 quoting caller values need.
 		Dictionary<string, object> existing = CombineAllFrontmatterObjects(ExtractFrontmatterObjects(input, out string body));
 		string nl = NewLineOf(input);
-		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing, FindQuotedDocumentStrings(input)).Trim(), nl);
+		string yamlFrontmatter = WithNewLines(YamlSerializer.SerializeValuesForDocument(frontmatter, existing, FindQuotedDocumentStrings(input), FindPlainDocumentScalars(input)).Trim(), nl);
 		return WithHeader(yamlFrontmatter, body, nl);
 	}
 
@@ -531,6 +531,43 @@ public static class Frontmatter
 		}
 
 		return quoted;
+	}
+
+	/// <summary>
+	/// Finds the nested scalars a document's frontmatter writes plain, by top-level key, so a rewritten header
+	/// can keep them plain inside a mapping or list the caller changed. A repeated key takes them from the
+	/// earliest block that holds it, the block whose value <see cref="CombineAllFrontmatterObjects"/> keeps.
+	/// </summary>
+	/// <param name="input">The markdown document content as a string.</param>
+	/// <returns>The paths of the plain nested scalars, by top-level key; empty when the document has no frontmatter.</returns>
+	private static Dictionary<string, HashSet<string>> FindPlainDocumentScalars(string input)
+	{
+		Dictionary<string, HashSet<string>> plain = new(StringComparer.Ordinal);
+		if (!TrySplitFrontmatterBlocks(input, out List<string> blocks, out _))
+		{
+			return plain;
+		}
+
+		HashSet<string> seen = new(StringComparer.Ordinal);
+		foreach (string section in blocks.Select(block => block.Trim()))
+		{
+			if (string.IsNullOrWhiteSpace(section)
+				|| !YamlSerializer.TryParseYamlObject(section, out Dictionary<string, object>? properties))
+			{
+				continue;
+			}
+
+			Dictionary<string, HashSet<string>> blockPlain = YamlSerializer.FindPlainNestedScalars(section);
+			foreach (string key in properties.Keys)
+			{
+				if (seen.Add(key) && blockPlain.TryGetValue(key, out HashSet<string>? paths))
+				{
+					plain[key] = paths;
+				}
+			}
+		}
+
+		return plain;
 	}
 
 	/// <summary>
