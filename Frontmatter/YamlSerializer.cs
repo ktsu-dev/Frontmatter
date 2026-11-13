@@ -86,7 +86,8 @@ public static class YamlSerializer
 		.ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
 		.WithEventEmitter(next => new EdgeWhitespaceQuotingEventEmitter(next))
 		.WithTypeConverter(new InvariantScalarTypeConverter())
-		.WithTypeConverter(new JsonValueTypeConverter());
+		.WithTypeConverter(new JsonValueTypeConverter())
+		.WithTypeConverter(new DocumentScalarTypeConverter());
 
 	/// <summary>
 	/// Attempts to parse a YAML string into a dictionary object.
@@ -279,8 +280,15 @@ public static class YamlSerializer
 	/// Such a string is written the way a caller value is, even when unchanged, so a quoted <c>'no'</c> keeps
 	/// its quotes instead of becoming a plain <c>no</c> that a YAML 1.1 reader takes for a boolean.
 	/// </param>
+	/// <param name="plainDocumentScalars">
+	/// The paths of the nested scalars the header wrote plain, by top-level key (see
+	/// <see cref="FindPlainNestedScalars"/>). When the caller changed a mapping or list the header holds, each
+	/// string inside it that is still the header's value at the same path, and that the header wrote plain, is
+	/// written plain again rather than given YAML 1.1 quoting, so editing <c>flags</c> keeps its untouched
+	/// <c>draft: no</c> as written (#242).
+	/// </param>
 	/// <returns>A string containing the serialized YAML.</returns>
-	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string>? quotedDocumentStrings = null)
+	internal static string SerializeValuesForDocument(Dictionary<string, object> input, IReadOnlyDictionary<string, object> documentValues, IReadOnlyDictionary<string, string>? quotedDocumentStrings = null, IReadOnlyDictionary<string, HashSet<string>>? plainDocumentScalars = null)
 	{
 		if (input == null || input.Count == 0)
 		{
@@ -306,8 +314,17 @@ public static class YamlSerializer
 				run = [];
 			}
 
+			object value = property.Value;
+			if (!fromDocument
+				&& plainDocumentScalars != null
+				&& plainDocumentScalars.TryGetValue(property.Key, out HashSet<string>? plainPaths)
+				&& documentValues.TryGetValue(property.Key, out object? documentValue))
+			{
+				value = MarkDocumentScalars(value, documentValue, string.Empty, plainPaths)!;
+			}
+
 			runIsFromDocument = fromDocument;
-			run[property.Key] = property.Value;
+			run[property.Key] = value;
 		}
 
 		yaml.Append(Serialize(runIsFromDocument ? Serializer : CallerValueSerializer, run));
@@ -404,6 +421,175 @@ public static class YamlSerializer
 
 		return quoted;
 	}
+
+	/// <summary>
+	/// Finds the scalars nested inside each top-level value of a YAML mapping that are written plain with no
+	/// explicit tag, by their path below that top-level key.
+	/// </summary>
+	/// <remarks>
+	/// Only the first occurrence of a key counts, as <see cref="TryParseYamlObject"/> keeps only that one. A
+	/// value reached through an alias or a merge key is not recorded, since its path does not show how its
+	/// scalars were written, so those are left to caller quoting. Text that does not parse as a mapping yields
+	/// no paths. A path is built from <see cref="KeySegment"/> and <see cref="IndexSegment"/>.
+	/// </remarks>
+	/// <param name="input">The YAML text of one block.</param>
+	/// <returns>The paths of the plain nested scalars, by top-level key.</returns>
+	internal static Dictionary<string, HashSet<string>> FindPlainNestedScalars(string input)
+	{
+		Dictionary<string, HashSet<string>> plain = new(StringComparer.Ordinal);
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return plain;
+		}
+
+		try
+		{
+			Parser parser = new(new StringReader(input));
+			parser.Consume<StreamStart>();
+			if (!parser.TryConsume<DocumentStart>(out _) || !parser.TryConsume<MappingStart>(out _))
+			{
+				return plain;
+			}
+
+			HashSet<string> seen = new(StringComparer.Ordinal);
+			while (!parser.TryConsume<MappingEnd>(out _))
+			{
+				string? key = parser.Current is Scalar keyScalar && !IsPlainMergeKey(keyScalar) ? keyScalar.Value : null;
+				parser.SkipThisAndNestedEvents();
+				if (key != null && seen.Add(key) && parser.Current is MappingStart or SequenceStart)
+				{
+					HashSet<string> paths = new(StringComparer.Ordinal);
+					CollectPlainScalars(parser, string.Empty, paths);
+					plain[key] = paths;
+				}
+				else
+				{
+					parser.SkipThisAndNestedEvents();
+				}
+			}
+		}
+		catch (YamlException)
+		{
+			plain.Clear();
+		}
+
+		return plain;
+	}
+
+	/// <summary>
+	/// Records the path of every plain, untagged scalar in the node the parser is at, and moves past the node.
+	/// </summary>
+	private static void CollectPlainScalars(IParser parser, string path, HashSet<string> paths)
+	{
+		switch (parser.Current)
+		{
+			case Scalar scalar:
+				if (scalar.Style == ScalarStyle.Plain && scalar.Tag.IsEmpty)
+				{
+					paths.Add(path);
+				}
+
+				parser.MoveNext();
+				break;
+			case SequenceStart:
+				parser.MoveNext();
+				for (int index = 0; !parser.TryConsume<SequenceEnd>(out _); index++)
+				{
+					CollectPlainScalars(parser, path + IndexSegment(index), paths);
+				}
+
+				break;
+			case MappingStart:
+				parser.MoveNext();
+				HashSet<string> seen = new(StringComparer.Ordinal);
+				while (!parser.TryConsume<MappingEnd>(out _))
+				{
+					string? key = parser.Current is Scalar keyScalar && !IsPlainMergeKey(keyScalar) ? keyScalar.Value : null;
+					parser.SkipThisAndNestedEvents();
+					if (key != null && seen.Add(key))
+					{
+						CollectPlainScalars(parser, path + KeySegment(key), paths);
+					}
+					else
+					{
+						parser.SkipThisAndNestedEvents();
+					}
+				}
+
+				break;
+			default:
+				// An alias: the scalars it names were written at their anchor, not here.
+				parser.SkipThisAndNestedEvents();
+				break;
+		}
+	}
+
+	/// <summary>
+	/// Reports whether a key scalar is the YAML 1.1 merge key, which only a plain <c>&lt;&lt;</c> is.
+	/// </summary>
+	private static bool IsPlainMergeKey(Scalar scalar) =>
+		scalar.Style == ScalarStyle.Plain && scalar.Tag.IsEmpty && scalar.Value == MergeKey;
+
+	/// <summary>
+	/// The path segment for a mapping key. The length prefix keeps one key's text from reading as several segments.
+	/// </summary>
+	private static string KeySegment(string key) => "k" + key.Length.ToString(CultureInfo.InvariantCulture) + ":" + key;
+
+	/// <summary>
+	/// The path segment for a sequence index.
+	/// </summary>
+	private static string IndexSegment(int index) => "i" + index.ToString(CultureInfo.InvariantCulture) + ";";
+
+	/// <summary>
+	/// Returns a value with each string inside it that the document holds at the same path, and wrote plain,
+	/// replaced by a <see cref="DocumentScalar"/>, so caller quoting leaves it as written. The mappings and lists
+	/// on the way are copied; the caller's value is not changed.
+	/// </summary>
+	/// <param name="value">The value about to be written.</param>
+	/// <param name="documentValue">The document's value at the same path.</param>
+	/// <param name="path">The path of both values below their top-level key.</param>
+	/// <param name="plainPaths">The paths below that key of the scalars the document wrote plain.</param>
+	/// <returns>The value to write.</returns>
+	private static object? MarkDocumentScalars(object? value, object? documentValue, string path, HashSet<string> plainPaths)
+	{
+		switch (value)
+		{
+			case string text when documentValue is string documentText
+				&& string.Equals(text, documentText, StringComparison.Ordinal)
+				&& plainPaths.Contains(path)
+				&& IsWrittenPlainFromDocument(text):
+				return new DocumentScalar(text);
+			case IDictionary<string, object> mapping when documentValue is IDictionary<string, object> documentMapping:
+				Dictionary<string, object> markedMapping = new(mapping.Count);
+				foreach (KeyValuePair<string, object> entry in mapping)
+				{
+					markedMapping[entry.Key] = documentMapping.TryGetValue(entry.Key, out object? documentEntry)
+						? MarkDocumentScalars(entry.Value, documentEntry, path + KeySegment(entry.Key), plainPaths)!
+						: entry.Value;
+				}
+
+				return markedMapping;
+			case IList<object> list when documentValue is IList<object> documentList:
+				List<object> markedList = new(list.Count);
+				for (int index = 0; index < list.Count; index++)
+				{
+					markedList.Add(index < documentList.Count
+						? MarkDocumentScalars(list[index], documentList[index], path + IndexSegment(index), plainPaths)!
+						: list[index]);
+				}
+
+				return markedList;
+			default:
+				return value;
+		}
+	}
+
+	/// <summary>
+	/// Reports whether the document serializer writes a string as a plain scalar of the same text, which is how
+	/// a string read from a plain document scalar is written when its value is unchanged.
+	/// </summary>
+	private static bool IsWrittenPlainFromDocument(string text) =>
+		text.Length > 0 && string.Equals(Serializer.Serialize(text).TrimEnd('\r', '\n'), text, StringComparison.Ordinal);
 
 	/// <summary>
 	/// Reports whether a scalar is written single- or double-quoted with no explicit tag, so it reads as a string.
@@ -1028,6 +1214,29 @@ public static class YamlSerializer
 
 		private static bool IsNonStringLookalike(string text) =>
 			text is "=" or MergeKey || Yaml12Float.IsMatch(text);
+	}
+
+	/// <summary>
+	/// A string read from a document's plain scalar that is written plain again, inside a value the caller
+	/// otherwise changed (#242).
+	/// </summary>
+	/// <param name="Text">The string.</param>
+	private sealed record DocumentScalar(string Text);
+
+	/// <summary>
+	/// Writes a <see cref="DocumentScalar"/> as a plain scalar. A type converter emits its scalar directly, so the
+	/// caller serializer's YAML 1.1 quoting does not apply to it.
+	/// </summary>
+	private sealed class DocumentScalarTypeConverter : IYamlTypeConverter
+	{
+		public bool Accepts(Type type) => type == typeof(DocumentScalar);
+
+		// The converter is registered on the serializer only; reading never produces this type.
+		public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer) =>
+			throw new NotSupportedException("This converter only writes values.");
+
+		public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
+			emitter.Emit(new Scalar(null, null, ((DocumentScalar)value!).Text, ScalarStyle.Plain, true, false));
 	}
 
 	/// <summary>
