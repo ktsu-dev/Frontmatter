@@ -233,13 +233,34 @@ public static class YamlSerializer
 	{
 		try
 		{
-			return serializer.Serialize(input);
+			return Write(serializer, input);
 		}
 		catch (MaximumRecursionLevelReachedException ex)
 		{
 			string key = input.Keys.FirstOrDefault(k => !CanSerialize(serializer, k, input[k])) ?? string.Empty;
 			throw new ArgumentException($"The value of frontmatter property '{key}' contains itself, so it cannot be written as YAML.", nameof(input), ex);
 		}
+	}
+
+	/// <summary>
+	/// Serializes a value, writing characters outside the Basic Multilingual Plane, such as emoji, as the
+	/// characters themselves (#250).
+	/// </summary>
+	/// <remarks>
+	/// YamlDotNet's emitter does not treat a surrogate pair as printable, so it double-quotes any string that
+	/// holds one and writes the character as a <c>\UXXXXXXXX</c> escape. Every scalar is therefore written
+	/// with each such character stood in for by printable BMP characters (see
+	/// <see cref="SupplementaryCharacterEmitter"/>), which are turned back into the character once the text
+	/// is written. YAML 1.2 counts U+10000 to U+10FFFF as printable, so the result is valid in any style.
+	/// </remarks>
+	/// <param name="serializer">The serializer to write with.</param>
+	/// <param name="input">The value to serialize.</param>
+	/// <returns>A string containing the serialized YAML.</returns>
+	private static string Write(ISerializer serializer, object input)
+	{
+		using StringWriter writer = new(CultureInfo.InvariantCulture);
+		serializer.Serialize(new SupplementaryCharacterEmitter(new Emitter(writer)), input);
+		return SupplementaryCharacterEmitter.Decode(writer.ToString());
 	}
 
 	/// <summary>
@@ -253,7 +274,7 @@ public static class YamlSerializer
 	{
 		try
 		{
-			serializer.Serialize(new Dictionary<string, object> { [key] = value });
+			Write(serializer, new Dictionary<string, object> { [key] = value });
 			return true;
 		}
 		catch (MaximumRecursionLevelReachedException)
@@ -349,7 +370,7 @@ public static class YamlSerializer
 
 		if (quotedDocumentStrings == null || quotedDocumentStrings.Count == 0)
 		{
-			return Serializer.Serialize(input);
+			return Write(Serializer, input);
 		}
 
 		System.Text.StringBuilder yaml = new();
@@ -360,7 +381,7 @@ public static class YamlSerializer
 			bool quoted = WasQuotedInDocument(property.Key, property.Value, documentValues, quotedDocumentStrings);
 			if (run.Count > 0 && quoted != runIsQuoted)
 			{
-				yaml.Append((runIsQuoted ? CallerValueSerializer : Serializer).Serialize(run));
+				yaml.Append(Write(runIsQuoted ? CallerValueSerializer : Serializer, run));
 				run = [];
 			}
 
@@ -368,7 +389,7 @@ public static class YamlSerializer
 			run[property.Key] = property.Value;
 		}
 
-		yaml.Append((runIsQuoted ? CallerValueSerializer : Serializer).Serialize(run));
+		yaml.Append(Write(runIsQuoted ? CallerValueSerializer : Serializer, run));
 		return yaml.ToString();
 	}
 
@@ -1214,6 +1235,116 @@ public static class YamlSerializer
 
 		private static bool IsNonStringLookalike(string text) =>
 			text is "=" or MergeKey || Yaml12Float.IsMatch(text);
+	}
+
+	/// <summary>
+	/// Passes events to an emitter, standing in for each character outside the Basic Multilingual Plane in a
+	/// scalar with characters the emitter writes as they are. <see cref="Decode"/> turns the written stand-ins
+	/// back into the characters.
+	/// </summary>
+	/// <remarks>
+	/// A character U+10000 to U+10FFFF is written as U+FDD0, two characters from U+E000 to U+E3FF that carry its
+	/// upper and lower ten bits, and U+FDD1. A U+FDD0 the scalar already holds is written as U+FDD0 U+FDD1, so
+	/// every U+FDD0 in the output starts a stand-in and no text a caller supplies can be mistaken for one.
+	/// A lone surrogate is passed through, and the emitter still escapes it.
+	/// </remarks>
+	private sealed class SupplementaryCharacterEmitter(IEmitter inner) : IEmitter
+	{
+		private const char Open = '\uFDD0';
+		private const char Close = '\uFDD1';
+		private const char PayloadBase = '\uE000';
+		private const int PayloadBits = 10;
+		private const int PayloadMask = (1 << PayloadBits) - 1;
+		private const int FirstSupplementary = 0x10000;
+
+		public void Emit(ParsingEvent @event)
+		{
+			if (@event is Scalar scalar && NeedsEncoding(scalar.Value))
+			{
+				@event = new Scalar(scalar.Anchor, scalar.Tag, Encode(scalar.Value), scalar.Style, scalar.IsPlainImplicit, scalar.IsQuotedImplicit, scalar.Start, scalar.End);
+			}
+
+			inner.Emit(@event);
+		}
+
+		/// <summary>
+		/// Turns the stand-ins in serialized text back into the characters they stand for.
+		/// </summary>
+		/// <param name="yaml">The text the emitter wrote.</param>
+		/// <returns>The text with every stand-in replaced.</returns>
+		public static string Decode(string yaml)
+		{
+			int start = yaml.IndexOf(Open);
+			if (start < 0)
+			{
+				return yaml;
+			}
+
+			System.Text.StringBuilder result = new(yaml.Length);
+			result.Append(yaml, 0, start);
+			for (int i = start; i < yaml.Length; i++)
+			{
+				char c = yaml[i];
+				if (c != Open)
+				{
+					result.Append(c);
+				}
+				else if (i + 1 < yaml.Length && yaml[i + 1] == Close)
+				{
+					result.Append(Open);
+					i++;
+				}
+				else
+				{
+					int codePoint = FirstSupplementary + ((yaml[i + 1] - PayloadBase) << PayloadBits) + (yaml[i + 2] - PayloadBase);
+					result.Append(char.ConvertFromUtf32(codePoint));
+					i += 3;
+				}
+			}
+
+			return result.ToString();
+		}
+
+		private static bool NeedsEncoding(string value)
+		{
+			for (int i = 0; i < value.Length; i++)
+			{
+				if (value[i] == Open || (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1])))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private static string Encode(string value)
+		{
+			System.Text.StringBuilder result = new(value.Length * 2);
+			for (int i = 0; i < value.Length; i++)
+			{
+				char c = value[i];
+				if (c == Open)
+				{
+					result.Append(Open).Append(Close);
+				}
+				else if (char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+				{
+					int offset = char.ConvertToUtf32(c, value[i + 1]) - FirstSupplementary;
+					result.Append(Open)
+						.Append((char)(PayloadBase + (offset >> PayloadBits)))
+						.Append((char)(PayloadBase + (offset & PayloadMask)))
+						.Append(Close);
+					i++;
+				}
+				else
+				{
+					result.Append(c);
+				}
+			}
+
+			return result.ToString();
+		}
 	}
 
 	/// <summary>
